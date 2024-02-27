@@ -1,0 +1,42 @@
+# Requires python=3.11
+# torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cu121
+# Refer to oobabooga/text-generation-webui/blob/main/requirements.txt for the packages from github.com
+
+gradio>=4.19.2
+torch>=2.4.1
+torchvision>=0.19.1
+transformers>=4.45.2
+
+# For GPTQ and AWQ
+auto-gptq --no-build-isolation # See https://github.com/AutoGPTQ/AutoGPTQ
+autoawq
+accelerate>=1.0.0
+optimum>=1.23.1
+
+# For online quantization
+bitsandbytes>=0.44.1
+
+# For GGUF
+https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/cpu/llama_cpp_python-0.3.1+cpuavx2-cp311-cp311-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/textgen-webui/llama_cpp_python_cuda_tensorcores-0.3.1+cu121-cp311-cp311-linux_x86_64.whl; platform_system == "Linux" and platform_machine == "x86_64" and python_version == "3.11"
+
+# For API
+openai
+sse_starlette
+
+# For training. Cuda compiler is needed
+# conda install -y -c "nvidia/label/cuda-12.1.1" cuda
+peft>=0.13.2
+deepspeed>=0.15.2
+https://github.com/Dao-AILab/flash-attention/releases/download/v2.6.3/flash_attn-2.6.3+cu123torch2.4cxx11abiFALSE-cp311-cp311-linux_x86_64.whl
+
+# For Qwen-VL
+tiktoken
+transformers_stream_generator
+
+# For misc text postprocessing
+langdetect
+opencc-python-reimplemented # CN conversion
+
+
+

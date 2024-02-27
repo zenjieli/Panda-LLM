@@ -1,0 +1,58 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            }
+        },
+        {
+            "name": "Webui",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "webui.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--server-name",
+                "0.0.0.0"
+            ]
+        },
+        {
+            "name": "Webui: Single GPU",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "webui.py",
+            "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--server-name",
+                "0.0.0.0"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "API: Run server Mixtral",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "openai_api.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--checkpoint-path",
+                "weights/hf/Mixtral-8x7B-Instruct-v0.1-GPTQ"
+            ],
+            "justMyCode": false
+        }
+    ]
+}
