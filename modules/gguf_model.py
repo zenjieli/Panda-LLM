@@ -70,21 +70,16 @@ class GGUFModel(BaseModel):
         block_count = get_block_count_from_llama_meta(self.core_model.metadata)
         return f'block count {block_count}' if block_count > 0 else ''
 
-    def try_tokenize(self, chatbot, system_prompt) -> List:
+    def _get_token_count(self, messages):
         tokenizer = self.core_model.tokenizer()
-        if not tokenizer:
-            return []
+        if not tokenizer or not messages:
+            return 0
 
-        if not self._chat_formatter:
-            return []
-
-        messages = BaseModel.chatbot_to_messages(chatbot, system_prompt)
-        if not messages:
-            return []
-
-        return tokenizer.encode(self._chat_formatter(messages=messages).prompt)
+        return len(tokenizer.encode(self._chat_formatter(messages=messages).prompt))
 
     def predict(self, chatbot, params):
+        from time import time
+
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot
         else:
@@ -92,20 +87,32 @@ class GGUFModel(BaseModel):
                 params, self._chat_completion_params)
 
             messages = BaseModel.chatbot_to_messages(chatbot, system_prompt=system_prompt)
-            output = self.core_model.create_chat_completion(messages=messages, stream=True, **model_params)
+            self.token_count = self._get_token_count(messages)
+            if self.check_token_count(self.token_count):
+                output = self.core_model.create_chat_completion(messages=messages, stream=True, **model_params)
 
-            postprocessor = CJKPostprocessing(enable_postprocessing)
-            for item in output:
-                if self.stop_event.is_set():
-                    break
+                postprocessor = CJKPostprocessing(enable_postprocessing)
+                new_token_count = 0
+                start_time = time()
+                for item in output:
+                    if self.stop_event.is_set():
+                        break
 
-                new_token = item['choices'][0]['delta'].get('content')
-                if new_token in self._stop_words:
-                    break
+                    new_token = item['choices'][0]['delta'].get('content')
+                    if new_token in self._stop_words:
+                        break
 
-                if new_token:
-                    chatbot[-1][-1] += postprocessor.run(new_token)
-                    yield chatbot
+                    if new_token:
+                        new_token_count += 1
+                        chatbot[-1][-1] += postprocessor.run(new_token)
+                        yield chatbot
+
+                if new_token_count > 0:
+                    self.token_count += new_token_count
+                    self.latest_speed = new_token_count / (time() - start_time)
+            else:
+                self.latest_speed = 0
+                yield chatbot
 
         self.stop_event.clear()
 

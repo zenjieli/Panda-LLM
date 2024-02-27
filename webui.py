@@ -1,7 +1,6 @@
 """A simple web interactive chat demo based on gradio."""
 import os.path as osp
 from argparse import ArgumentParser
-from typing import Tuple, List
 import gradio as gr
 import torch
 import gc
@@ -15,16 +14,47 @@ import utils.ui_utils as ui_utils
 from utils.custom_config import CustomConfig
 from modules import shared
 
+
 def update_model_list():
     return gr.Dropdown(choices=get_model_list())
 
 
-def reset_state(history) -> Tuple[str, str]:
+def update_prediction_status_label():
+    if shared.model is None:
+        return ''
+
+    if shared.model.token_count > 0 and shared.model.latest_speed > 0:
+        return f"Total tokens: {shared.model.token_count}<br>Latest speed:{shared.model.latest_speed:.1f} tokens/s"
+    elif shared.model.token_count > 0:  # If speed is zero, check if there are too many tokens
+        if not shared.model.check_token_count(shared.model.token_count):
+            return f"Too many tokens: {shared.model.token_count}"
+
+    return ''
+
+
+def reset_state(history) -> tuple[list, str]:
     if history is not None:
         history.clear()
-    collect_gabbage()
+    shared.model_invalidate_cache()
 
+    collect_gabbage()
     return history, ''
+
+
+def remove_last_message(history) -> tuple[list, str]:
+    text_processing.remove_last_message(history)
+    shared.model_invalidate_cache()
+
+    collect_gabbage()
+    return history, ''
+
+
+def remove_last_reply(history):
+    text_processing.remove_last_reply(history)
+    shared.model_invalidate_cache()
+
+    collect_gabbage()
+    return history
 
 
 def collect_gabbage():
@@ -56,7 +86,7 @@ def on_model_selection_change(model_list_dropdown, n_gpu_layers, n_ctx_1024, lor
     return n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit
 
 
-def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit) -> Tuple[str, str]:
+def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit) -> tuple[str, str]:
     """
     Parameters:
         model_list_dropdown: model name
@@ -87,7 +117,7 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
               "gpu_layers": n_gpu_layers,
               "n_ctx": n_ctx * 1024}
 
-    if "custom/" in model_name_or_path.lower(): # This is a custom model instead of a Huggingface model name
+    if "custom/" in model_name_or_path.lower():  # This is a custom model instead of a Huggingface model name
         model_name_or_path = osp.join(CUSTOM_WEIGHTS_DIR, model_name_or_path[len("custom/"):])
 
     shared.model = model_class(model_name_or_path, **kwargs)
@@ -110,21 +140,13 @@ def save_custom_config(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path,
     shared.custom_configs.save_to_json()
 
 
-def append_user_input(query, chatbot, system_prompt) -> Tuple[str, List, str]:
+def append_user_input(query, chatbot, system_prompt) -> tuple[str, list]:
     if not shared.model:
         return query, chatbot, 'No model loaded'
     else:
         query, chatbot = shared.model.append_user_input(query, chatbot)
 
-        # Compute the token count
-        tokens = shared.model.try_tokenize(chatbot, system_prompt)
-        token_count = len(tokens) if tokens is not None else 0
-        prediction_status = f'Token count: {token_count}' if token_count > 0 else ''
-        if not shared.model.check_token_count(token_count):
-            prediction_status += ' (too many tokens)'
-            chatbot.pop()
-
-        return query, chatbot, prediction_status
+        return query, chatbot
 
 
 def update_prediction_status(chatbot):
@@ -178,7 +200,7 @@ def main(args):
                         stop_btn = gr.Button('🛑 Stop')
                     with gr.Row():
                         prediction_status_label = gr.Markdown()
-                        model_param_elements['enable_postprocessing'] = gr.Checkbox(True, label="Postprocess output")
+                        model_param_elements['enable_postprocessing'] = gr.Checkbox(False, label="Postprocess output")
                 with gr.Column(scale=1):
                     empty_btn = gr.Button('🗑️ Clear History')
                     addfile_btn = gr.UploadButton("🖼️ Image...", file_types=["image"])
@@ -214,17 +236,17 @@ def main(args):
                         placeholder='System prompt...', container=False)
 
                 with gr.Column(scale=5):
-                    from utils.download_utils import download_file
-                    # See https://huggingface.co/docs/huggingface_hub/en/guides/download
                     hf_model_tag = gr.Textbox(label="Download model", info=ui_utils.DOWNLOAD_MODEL_INSTRUCTION,
-                                              show_label=True, container=False)
-                    hf_filename = gr.Textbox(placeholder="File name (for GGUF models)",
-                                             max_lines=1, container=False)
+                                              show_label=True, container=True)
+                    hf_filename = gr.Textbox(placeholder="File name (for GGUF models)", max_lines=1, label="")
+                    hf_token = gr.Textbox(placeholder="Token for gated models", max_lines=1, label="")
                     download_btn = gr.Button('Download')
                     model_status_label = gr.Markdown()
                     gpu_usage_label = gr.Markdown()
 
-            download_btn.click(download_file, inputs=[hf_model_tag, hf_filename], outputs=[model_status_label])
+            from utils.download_utils import download_file
+            download_btn.click(download_file, inputs=[hf_model_tag,
+                               hf_filename, hf_token], outputs=[model_status_label])
             model_load_btn.click(load_model,
                                  inputs=[model_list_dropdown, gpu_layers_slider,
                                          ctx_length_slider, lora_path, load_in_8bit_checkbox],
@@ -241,15 +263,16 @@ def main(args):
         predict_params = [chatbot, model_param_elements['system_prompt'], model_param_elements['top_k'], model_param_elements['top_p'],
                           model_param_elements['temperature'], model_param_elements['enable_postprocessing']]
         submit_btn.click(append_user_input, [user_input, chatbot, model_param_elements['system_prompt']],
-                         [user_input, chatbot, prediction_status_label]).then(predict, predict_params, chatbot)
+                         [user_input, chatbot]).then(predict, predict_params, chatbot).then(
+                             update_prediction_status_label, None, prediction_status_label)
 
         # Same as "Submit"; trigged when user presses enter
         user_input.submit(append_user_input, [user_input, chatbot, model_param_elements['system_prompt']],
-                          [user_input, chatbot, prediction_status_label]).then(
-            predict, predict_params, [chatbot])
-        regen_btn.click(text_processing.remove_last_reply, [chatbot], chatbot).then(
-            predict, predict_params, chatbot)
-        pop_last_message_btn.click(text_processing.remove_last_message, [chatbot], chatbot)
+                          [user_input, chatbot]).then(
+            predict, predict_params, [chatbot]).then(update_prediction_status_label, None, prediction_status_label)
+        regen_btn.click(remove_last_reply, [chatbot], chatbot).then(
+            predict, predict_params, chatbot).then(update_prediction_status_label, None, prediction_status_label)
+        pop_last_message_btn.click(remove_last_message, chatbot, [chatbot, prediction_status_label])
         stop_btn.click(set_stop_event, queue=False)
         empty_btn.click(reset_state, chatbot, [chatbot, prediction_status_label], queue=False)
 

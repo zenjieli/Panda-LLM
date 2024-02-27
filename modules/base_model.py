@@ -8,6 +8,8 @@ class BaseModel:
         self.stop_event = Event()
         self.core_model = None
         self.supports_flash_attention = self.__supports_flash_attention()
+        self.token_count = 0 # Record the current token count
+        self.latest_speed = 0 # Record the average token generation speed (tokens per sec) of the latest inference
 
     def predict(self):
         pass
@@ -36,8 +38,8 @@ class BaseModel:
         else:
             return '', chatbot
 
-    def try_tokenize(self, chatbot, system_prompt) -> list:
-        return []
+    def invalidate_cache(self):
+        pass
 
     def check_token_count(self, token_count: int) -> bool:
         """Returns true if the current token count is OK for inference
@@ -59,6 +61,9 @@ class BaseModel:
 
     def tokenizer(self):
         return None
+
+    def invalidate_cache(self):
+        pass
 
     def gather_params(user_param_elements, expected_params) -> tuple[dict, str, bool]:
         """Gather model parameters

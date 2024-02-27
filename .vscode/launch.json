@@ -10,6 +10,25 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Cache study",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "experimental/qwen2-vl_cache_study.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            }
+        },
+        {
+            "name": "vLLM study",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "experimental/vllm/qwen2_vl_vllm.py",
+            "console": "integratedTerminal",
             "justMyCode": false,
             "env": {
                 "CUDA_VISIBLE_DEVICES": "0"
