@@ -4,6 +4,7 @@ from enum import Enum
 class ModelType(Enum):
     GPTQ = 'gptq'
     GGUF = 'gguf'
+    QWEN_VL = 'qwen-vl'
     Other = 'other'
 
 
@@ -21,10 +22,9 @@ def get_model_type(model_path):
     from transformers import AutoConfig
 
     # Check model path first
-    if 'gptq' in model_path.lower():
-        return ModelType.GPTQ
-    elif 'gguf' in model_path.lower():
-        return ModelType.GGUF
+    for model_type in ModelType:
+        if model_type != ModelType.Other and model_type.value in model_path.lower():
+            return model_type
     else:
         # Check config
         try:

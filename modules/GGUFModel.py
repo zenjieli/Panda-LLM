@@ -8,13 +8,13 @@ class GGUFModel(BaseModel):
         self.llm = Llama(model_path=model_path, chat_format="chatml",
                          n_gpu_layers=gpu_layers, n_ctx=8*1024)
 
-    def predict(self, history, top_p, temperature):
-        if len(history) == 0 or not history[-1][0] or history[-1][1]:  # Empty user input or non-empty reply
-            yield history
+    def predict(self, chatbot, task_history, top_p, temperature):
+        if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
+            yield chatbot
         else:
             messages = []
-            for idx, (user_msg, model_msg) in enumerate(history):
-                if idx == len(history) - 1 and not model_msg:
+            for idx, (user_msg, model_msg) in enumerate(chatbot):
+                if idx == len(chatbot) - 1 and not model_msg:
                     messages.append({'role': 'user', 'content': user_msg})
                     break
                 if user_msg:
@@ -30,7 +30,7 @@ class GGUFModel(BaseModel):
 
             new_token = item['choices'][0]['delta'].get('content')
             if new_token:
-                history[-1][-1] += new_token
-                yield history
+                chatbot[-1][-1] += new_token
+                yield chatbot
 
         self.stop_event.clear()

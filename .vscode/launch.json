@@ -129,7 +129,22 @@
                 "--model-path",
                 "models/qwen1_5-72b-chat-gguf/qwen1_5-72b-chat-q3_k_m.gguf",
                 "--gguf-gpu-layers",
-                "25"
+                "15"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Webui: Qwen-VL",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "webui.py",
+            "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--model-path",
+                "models/Qwen-VL-Chat-Int4"
             ],
             "justMyCode": false
         }
