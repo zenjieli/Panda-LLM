@@ -1,13 +1,25 @@
-# Installation
+# Panda Webui
+
+- [Panda Webui](#panda-webui)
+  - [Installation](#installation)
+  - [models](#models)
+    - [Download](#download)
+    - [Yi](#yi)
+    - [Notes](#notes)
+  - [Fine tuning](#fine-tuning)
+
+
+
+## Installation
 
 * Install the packages in requirements.txt
-* Cuda Runtime for `llama-cpp` with ```conda install -y -c "nvidia/label/cuda-12.1.1" cuda```
+* Cuda for `llama-cpp` (GGUF inference) and `deepspeed` (training) with ```conda install -y -c "nvidia/label/cuda-12.1.1" cuda```. If training is not needed, one can install the CUDA Runtime instead: ```conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime```
 * Create a soft link to the model directory
 
-# models
+## models
 
 
-## Download
+### Download
 ```shell
 pip install huggingface-cli
 ```
@@ -24,10 +36,15 @@ huggingface-cli download TheBloke/Yi-34B-Chat-GGUF yi-34b-chat.Q4_K_M.gguf --loc
 huggingface-cli download TheBloke/Yi-34B-Chat-GPTQ
 ```
 
-## Yi
+### Yi
 
 There is bug in llama.cpp in converting Yi models to `gguf`. See the fix in <https://github.com/01-ai/Yi/blob/main/docs/README_llama.cpp.md>. When using `gguf` models, one should use `chatml` prompt template. A fixed GGUF can be downloaded from onedrive.
 
 
-# Notes
+### Notes
 The AWQ model does not work properly. It never ends.
+
+## Fine tuning
+
+See [Supervised fine tuning](lora/readme.md).
+

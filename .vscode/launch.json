@@ -12,7 +12,8 @@
             "console": "integratedTerminal",
             "env": {
                 "CUDA_VISIBLE_DEVICES": "0"
-            }
+            },
+            "justMyCode": false
         },
         {
             "name": "Infer Chat CML 0.5B",
@@ -26,7 +27,24 @@
             "args": [
                 "--model-path",
                 "models/Qwen1.5-0.5B-Chat"
-            ]
+                            ]
+        },
+        {
+            "name": "Infer with LORA 1.8B",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "lora/infer_with_lora.py",
+            "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--model-path",
+                "models/hf/Qwen1.5-1.8B-Chat",
+                "--lora-path",
+                "~/workspace/github/Qwen1.5/examples/sft/output_qwen"
+            ],
+            "justMyCode": false
         },
         {
             "name": "Webui: Qwen1.8B",
@@ -39,7 +57,28 @@
             },
             "args": [
                 "--model-path",
-                "models/Qwen1.5-1.8B-Chat-GPTQ-Int8"
+                "models/hf/Qwen1.5-1.8B-Chat-GPTQ-Int8",
+                "--server-name",
+                "0.0.0.0"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "Webui: Qwen1.8B LORA",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "webui.py",
+            "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--model-path",
+                "models/lora/Qwen1.5-1.8B-Chat-Lora",
+                "--server-name",
+                "0.0.0.0",
+                "--server-port",
+                "8112"
             ],
             "justMyCode": false
         },
@@ -131,6 +170,21 @@
             "args": [
                 "--model-path",
                 "models/Qwen-VL-Chat-Int4"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "API: Run server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "openai_api.py",
+            "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--checkpoint-path",
+                "models/hf/Qwen1.5-1.8B-Chat"
             ],
             "justMyCode": false
         }

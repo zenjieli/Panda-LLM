@@ -73,15 +73,15 @@ def main(args):
         emptyBtn.click(reset_state, chatbot, chatbot, queue=False)
 
     demo.queue()
-    demo.launch(server_name=args.server_name, server_port=8111, inbrowser=False, share=args.share)
+    demo.launch(server_name=args.server_name, server_port=args.server_port, inbrowser=False)
 
 
 def parse_arguments():
     parser = ArgumentParser()
     parser.add_argument('--model-path', type=str)
     parser.add_argument('--gguf-gpu-layers', type=int, default=0, help='The number of model layers on GPU')
-    parser.add_argument('--share', action='store_true', default=False, help='Create a publicly shareable link')
     parser.add_argument('--server-name', type=str, default='127.0.0.1', help='Demo server name')
+    parser.add_argument('--server-port', type=int, default=8111, help='Demo server port')
 
     return parser.parse_args()
 
