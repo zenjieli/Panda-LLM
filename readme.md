@@ -3,48 +3,57 @@
 - [Panda Webui](#panda-webui)
   - [Installation](#installation)
   - [models](#models)
-    - [Download](#download)
     - [Yi](#yi)
-    - [Notes](#notes)
   - [Fine tuning](#fine-tuning)
+  - [Known issues](#known-issues)
 
 
 
 ## Installation
 
+* Create a new environment
+```shell
+conda create -n panda python=3.11
+conda activate panda
+```
+* Install pytorch
+```shell
+pip install torch==2.2.1 torchvision==0.17.1 --index-url https://download.pytorch.org/whl/cu121
+```
+* For `llama-cpp` (GGUF inference) and `deepspeed` (training):
+```shell
+conda install -y -c "nvidia/label/cuda-12.1.1" cuda
+```
+If training is not needed, one can install the CUDA Runtime instead:
+```shell
+conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime
+```
 * Install the packages in requirements.txt
-* Cuda for `llama-cpp` (GGUF inference) and `deepspeed` (training) with ```conda install -y -c "nvidia/label/cuda-12.1.1" cuda```. If training is not needed, one can install the CUDA Runtime instead: ```conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime```
 * Create a soft link to the model directory
 
 ## models
-
-
-### Download
-```shell
-pip install huggingface-cli
-```
-
-**GGUF files**
-
-```shell
-huggingface-cli download TheBloke/Yi-34B-Chat-GGUF yi-34b-chat.Q4_K_M.gguf --local-dir models/yi-34b-chat-gguf --local-dir-use-symlinks False
-```
-
-**GPTQ files**
-
-```shell
-huggingface-cli download TheBloke/Yi-34B-Chat-GPTQ
-```
 
 ### Yi
 
 There is bug in llama.cpp in converting Yi models to `gguf`. See the fix in <https://github.com/01-ai/Yi/blob/main/docs/README_llama.cpp.md>. When using `gguf` models, one should use `chatml` prompt template. A fixed GGUF can be downloaded from onedrive.
 
+**Note**:
+* Yi-34B-34bits will crash the system and files
+* Generally, Yi-34B--GGUF models suffer a lot from illusions and non-stopping replies
 
-### Notes
-The AWQ model does not work properly. It never ends.
+
 
 ## Fine tuning
 
 See [Supervised fine tuning](lora/readme.md).
 
+## Known issues
+
+* Quantization
+  * The AWQ model does not work properly. It never ends.
+  * Only GGUF works with multiple GPUs
+* Model specific
+  * Mistral doesn't accept the system prompt
+  * Qwen14B-Chat-Int8: runtime error: probability tensor contains either `inf`, `nan` or element < 0
+* Hardware specific
+  * `Cuda extension not installed` error when loading GPTQ models with 4060Ti GPUs

@@ -16,6 +16,11 @@ from transformers.generation import GenerationConfig
 
 from threading import Thread
 
+from utils.model_utils import ModelType, get_model_type, get_block_count_from_llama_meta
+import modules.shared as shared
+from modules.BaseModel import BaseModel
+from modules.GGUFModel import GGUFModel
+
 from utils.openai_types import (
     ModelCard,
     ModelList,
@@ -98,11 +103,10 @@ def parse_messages(messages):
 
 @app.post('/v1/chat/completions', response_model=ChatCompletionResponse)
 async def create_chat_completion(request: ChatCompletionRequest):
-    global model, tokenizer
-
     stop = StopOnTokens()
-    gen_kwargs = {'stopping_criteria': StoppingCriteriaList([stop]),
-                  'max_new_tokens': 2048,}
+    # gen_kwargs = {'stopping_criteria': StoppingCriteriaList([stop]),
+    #               'max_new_tokens': 2048,}
+    gen_kwargs = {}
 
     if request.top_k is not None:
         gen_kwargs['top_k'] = request.top_k
@@ -144,8 +148,6 @@ class StopOnTokens(StoppingCriteria):
 
 
 async def predict(query: str, system: str, model_id: str, gen_kwargs: Dict):
-    global model, tokenizer
-
     messages = [{'role': 'system', 'content': system}] if system else []
     messages.append({'role': 'user', 'content': query})
     model_inputs = tokenizer.apply_chat_template(messages, add_generation_prompt=True,
@@ -172,19 +174,13 @@ async def predict(query: str, system: str, model_id: str, gen_kwargs: Dict):
 
 
 def predict_nostream(query: str, system: str, model_id: str, gen_kwargs: Dict):
-    global model, tokenizer
-
-    messages = [{'role': 'system', 'content': system}] if system else []
-    messages.append({'role': 'user', 'content': query})
-    model_inputs = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors='pt').to('cuda')
-
-    gen_kwargs = {**gen_kwargs, 'input_ids': model_inputs}
-
-    outputs = model.generate(**gen_kwargs)
-    reply = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    llm = shared.model.llm
+    messages = BaseModel.chatbot_to_messages(chatbot=[(query, '')], system_prompt=system)
+    reply = llm.create_chat_completion(messages=messages, stream=False, **gen_kwargs)
+    reply_msg = reply['choices'][0]['message']['content']
 
     choice_data = ChatCompletionResponseChoice(index=0, message=ChatMessage(
-        role='assistant', content=reply), finish_reason='stop')
+        role='assistant', content=reply_msg), finish_reason='stop')
     return ChatCompletionResponse(model=model_id,
                                    object='chat.completion',
                                    choices=[choice_data])
@@ -221,25 +217,11 @@ def _get_args():
 if __name__ == '__main__':
     args = _get_args()
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        args.checkpoint_path,
-        trust_remote_code=True,
-        resume_download=True,
-    )
+    model_type = get_model_type(args.checkpoint_path)
 
-    device_map = 'auto'
-
-    model = AutoModelForCausalLM.from_pretrained(
-        args.checkpoint_path,
-        device_map=device_map,
-        trust_remote_code=True,
-        resume_download=True,
-    ).eval()
-
-    model.generation_config = GenerationConfig.from_pretrained(
-        args.checkpoint_path,
-        trust_remote_code=True,
-        resume_download=True,
-    )
+    if model_type in [ModelType.GPTQ, ModelType.Other]:
+        raise ValueError('Model type {} is not supported'.format(model_type))
+    elif model_type == ModelType.GGUF:
+        shared.model = GGUFModel(args.checkpoint_path, gpu_layers=-1, n_ctx=2 * 1024)
 
     uvicorn.run(app, host=args.server_name, port=args.server_port, workers=1)

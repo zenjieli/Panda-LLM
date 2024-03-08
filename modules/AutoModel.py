@@ -1,18 +1,24 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
-from threading import Thread, Event
+from typing import List
+from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
+from threading import Thread
 import torch
 from modules.BaseModel import BaseModel
 
-class GPTQModel(BaseModel):
+
+class AutoModel(BaseModel):
+    """For unquantized models, GPTQ and AWQ using transformers
+    """
+    _chat_completion_params = ['temperature', 'top_p', 'top_k', 'repeat_penalty']
     def __init__(self, model_path):
         super().__init__()
 
-        self.__tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_path)
+
         # model.dtype will be set to torch.float16 if GPTQ is used
         self.core_model = AutoModelForCausalLM.from_pretrained(model_path, device_map='cuda').eval()
 
         # If model_max_length is set in tokenizer, use it; otherwise, use 4*1024
-        self.__model_max_length = self.__tokenizer.model_max_length if self.__tokenizer.model_max_length < 400*1024 else 4*1024
+        self._model_max_length = self._tokenizer.model_max_length if self._tokenizer.model_max_length < 400*1024 else 4*1024
 
     class StopOnTokens(StoppingCriteria):
         def __call__(
@@ -26,36 +32,30 @@ class GPTQModel(BaseModel):
                     return True
             return False
 
-    def predict(self, chatbot, task_history, top_p, temperature):
+    def _tokenize(self, chatbot, system_prompt) -> torch.Tensor:
+        messages = BaseModel.chatbot_to_messages(chatbot, system_prompt)
+        return self._tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors='pt')
+
+    def try_tokenize(self, chatbot, system_prompt) -> List:
+        return self._tokenize(chatbot, system_prompt).squeeze().tolist()
+
+    def predict(self, chatbot, params):
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot
         else:
+            model_params, system_prompt, _ = BaseModel.gather_params(params, self._chat_completion_params)
             stop = self.StopOnTokens()
-            messages = []
-            for idx, (user_msg, model_msg) in enumerate(chatbot):
-                if idx == len(chatbot) - 1 and not model_msg:
-                    messages.append({'role': 'user', 'content': user_msg})
-                    break
-                if user_msg:
-                    messages.append({'role': 'user', 'content': user_msg})
-                if model_msg:
-                    messages.append({'role': 'assistant', 'content': model_msg})
-
-            model_inputs = self.__tokenizer.apply_chat_template(
-                messages, add_generation_prompt=True, tokenize=True, return_tensors='pt'
-            ).to(next(self.core_model.parameters()).device)
+            model_inputs = self._tokenize(chatbot, system_prompt).to('cuda')
             streamer = TextIteratorStreamer(
-                self.__tokenizer, timeout=60, skip_prompt=True, skip_special_tokens=True
+                self._tokenizer, timeout=60, skip_prompt=True, skip_special_tokens=True
             )
             generate_kwargs = {
                 'input_ids': model_inputs,
                 'streamer': streamer,
-                'do_sample': True,
-                'top_p': top_p,
-                'temperature': temperature,
+                'do_sample': True if model_params.get('top_k', 40) > 1 else False, # do_sample=True only makes sense if top_k > 1
                 'stopping_criteria': StoppingCriteriaList([stop]),
-                'repetition_penalty': 1.2,
-                'max_length': self.__model_max_length
+                'max_length': self._model_max_length,
+                **model_params
             }
             t = Thread(target=self.core_model.generate, kwargs=generate_kwargs)
             t.start()

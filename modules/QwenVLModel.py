@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
 import secrets
 import os.path as osp
@@ -8,16 +9,17 @@ from modules.BaseModel import BaseModel
 
 class QwenVLModel(BaseModel):
     PUNCTUATION = "！？。＂＃＄％＆＇（）＊＋，－／：；＜＝＞＠［＼］＾＿｀｛｜｝～｟｠｢｣､、〃》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿–—‘’‛“”„‟…‧﹏."
+    _task_history = []
 
     def __init__(self, model_path):
         super().__init__()
 
-        self.__tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        self._tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
         # self.__llm.dtype will be set to torch.float16 for GPTQ models
-        self.__llm = AutoModelForCausalLM.from_pretrained(model_path, device_map='cuda', trust_remote_code=True).eval()
+        self._llm = AutoModelForCausalLM.from_pretrained(model_path, device_map='cuda', trust_remote_code=True).eval()
 
-        self.__uploaded_file_dir = osp.join(tempfile.gettempdir(), "gradio")
+        self._uploaded_file_dir = osp.join(tempfile.gettempdir(), "gradio")
 
     def support_image(self):
         return True
@@ -59,20 +61,23 @@ class QwenVLModel(BaseModel):
         text = text.replace('<ref>', '').replace('</ref>', '')
         return re.sub(r'<box>.*?(</box>|$)', '', text)
 
-    def append_user_input(self, query, chatbot, task_history):
+    def append_user_input(self, query: str, chatbot: List[List]) -> Tuple[str, List[List]]:
+        if len(chatbot) == 0 or (len(chatbot) == 1 and chatbot[0][-1] == None): # Reset history if it's the first query
+            self._task_history = chatbot.copy()
+
         task_text = query
         if len(query) >= 2 and query[-1] in self.PUNCTUATION and query[-2] not in self.PUNCTUATION:
             task_text = query[:-1]
         chatbot = chatbot + [(self._parse_text(query), None)]
-        task_history = task_history + [(task_text, None)]
-        return '', chatbot, task_history
+        self._task_history += [(task_text, None)]
+        return '', chatbot
 
-    def predict(self, chatbot, task_history, top_p, temperature):
+    def predict(self, chatbot, params):
         import copy
 
         chat_query = chatbot[-1][0]
-        query = task_history[-1][0]
-        history_cp = copy.deepcopy(task_history)
+        query = self._task_history[-1][0]
+        history_cp = copy.deepcopy(self._task_history)
         full_response = ""
 
         history_filter = []
@@ -90,7 +95,7 @@ class QwenVLModel(BaseModel):
 
         history, message = history_filter[:-1], history_filter[-1][0]
 
-        for response in self.__llm.chat_stream(self.__tokenizer, message, history=history):
+        for response in self._llm.chat_stream(self._tokenizer, message, history=history):
             if self.stop_event.is_set():
                 break
 
@@ -102,10 +107,10 @@ class QwenVLModel(BaseModel):
         self.stop_event.clear()
         response = full_response
         history.append((message, response))
-        image = self.__tokenizer.draw_bbox_on_latest_picture(response, history)
+        image = self._tokenizer.draw_bbox_on_latest_picture(response, history)
         if image is not None:
             temp_dir = secrets.token_hex(20)
-            temp_dir = Path(self.__uploaded_file_dir) / temp_dir
+            temp_dir = Path(self._uploaded_file_dir) / temp_dir
             temp_dir.mkdir(exist_ok=True, parents=True)
             name = f"tmp{secrets.token_hex(5)}.jpg"
             filename = temp_dir / name
@@ -114,5 +119,5 @@ class QwenVLModel(BaseModel):
         else:
             chatbot[-1] = (self._parse_text(chat_query), response)
 
-        task_history[-1] = (query, full_response)
+        self._task_history[-1] = (query, full_response)
         yield chatbot

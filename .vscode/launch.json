@@ -10,6 +10,25 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            }
+        },
+        {
+            "name": "Webui",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "webui.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "Webui: Single GPU",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "webui.py",
+            "console": "integratedTerminal",
             "env": {
                 "CUDA_VISIBLE_DEVICES": "0"
             },
@@ -26,8 +45,8 @@
             },
             "args": [
                 "--model-path",
-                "models/Qwen1.5-0.5B-Chat"
-                            ]
+                "models/hf/Qwen1.5-0.5B-Chat"
+            ]
         },
         {
             "name": "Infer with LORA 1.8B",
@@ -47,144 +66,26 @@
             "justMyCode": false
         },
         {
-            "name": "Webui: Qwen1.8B",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/hf/Qwen1.5-1.8B-Chat-GPTQ-Int8",
-                "--server-name",
-                "0.0.0.0"
-            ],
-            "justMyCode": false
-        },
-        {
-            "name": "Webui: Qwen1.8B LORA",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/lora/Qwen1.5-1.8B-Chat-Lora",
-                "--server-name",
-                "0.0.0.0",
-                "--server-port",
-                "8112"
-            ],
-            "justMyCode": false
-        },
-        {
-            "name": "Webui: Qwen14B",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/Qwen1.5-14B-Chat-GPTQ-Int4"
-            ]
-        },
-        {
-            "name": "Webui: Mistral-7B",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/Mistral-7B-Instruct-v0.2-GPTQ"
-            ]
-        },
-        {
-            "name": "Webui: Yi-6B",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/Yi-6B-Chat-8bits"
-            ]
-        },
-        {
-            "name": "Webui: Yi-34B-GGUF",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/Yi-34B-Chat-GGUF/yi-34b-chat.Q4_K_M.gguf",
-                "--gguf-gpu-layers",
-                "30"
-            ],
-            "justMyCode": false
-        },
-        {
-            "name": "Webui: Qwen-GGUF",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/qwen1_5-72b-chat-gguf/qwen1_5-72b-chat-q3_k_m.gguf",
-                "--gguf-gpu-layers",
-                "15"
-            ],
-            "justMyCode": false
-        },
-        {
-            "name": "Webui: Qwen-VL",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "webui.py",
-            "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
-            "args": [
-                "--model-path",
-                "models/Qwen-VL-Chat-Int4"
-            ],
-            "justMyCode": false
-        },
-        {
-            "name": "API: Run server",
+            "name": "API: Run server Mixtral",
             "type": "debugpy",
             "request": "launch",
             "program": "openai_api.py",
             "console": "integratedTerminal",
-            "env": {
-                "CUDA_VISIBLE_DEVICES": "0"
-            },
             "args": [
                 "--checkpoint-path",
-                "models/hf/Qwen1.5-1.8B-Chat"
+                "models/hf/Mixtral-8x7B-Instruct-v0.1-GPTQ"
+            ],
+            "justMyCode": false
+        },
+        {
+            "name": "API: Run experimental",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "openai_api_experimental.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--checkpoint-path",
+                "models/hf/qwen1_5-14b-chat-q5_0.gguf"
             ],
             "justMyCode": false
         }

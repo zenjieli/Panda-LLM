@@ -5,7 +5,7 @@ from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
 
 import utils.text_processing as text_processing
 from utils.model_utils import ModelType, get_model_type
-from modules.GPTQModel import GPTQModel
+from modules.AutoModel import AutoModel
 from modules.GGUFModel import GGUFModel
 
 
