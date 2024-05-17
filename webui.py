@@ -12,6 +12,7 @@ from utils.model_utils import ModelType, get_model_type, get_block_count_from_ll
 from modules.AutoModel import AutoModel
 from modules.GGUFModel import GGUFModel
 from modules.QwenVLModel import QwenVLModel
+from modules.LLaVAModel import LLaVAModel
 
 from utils.download_utils import get_model_list
 import utils.ui_utils as ui_utils
@@ -87,7 +88,8 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx) -> Tuple[str, str]:
         shared.model = GGUFModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
         block_count = get_block_count_from_llama_meta(shared.model.llm.metadata)
         meta_info = f'block count {block_count}'
-
+    elif model_type == ModelType.LLaVA:
+        shared.model = LLaVAModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
     elif model_type == ModelType.QWEN_VL:
         shared.model = QwenVLModel(model_path)
     else:
