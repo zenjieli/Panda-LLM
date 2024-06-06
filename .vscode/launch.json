@@ -66,6 +66,23 @@
             "justMyCode": false
         },
         {
+            "name": "Infer with LORA 4B",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "lora/infer_with_lora.py",
+            "console": "integratedTerminal",
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "0"
+            },
+            "args": [
+                "--model-path",
+                "models/hf/Qwen1.5-4B-Chat",
+                "--lora-path",
+                "models/lora/Qwen1.5_4B_writer",
+                "--load-in-8bit"
+            ]
+        },
+        {
             "name": "API: Run server Mixtral",
             "type": "debugpy",
             "request": "launch",

@@ -1,5 +1,5 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel, AutoPeftModelForCausalLM
+from peft import PeftModel
 
 
 def main(options):
@@ -8,12 +8,12 @@ def main(options):
     tokenizer = AutoTokenizer.from_pretrained(options.model_path)
 
     # Alternatively, use `model = AutoPeftModelForCausalLM.from_pretrained(options.lora_path, device_map=device)`
-    model = AutoModelForCausalLM.from_pretrained(options.model_path, device_map=device)
+    model = AutoModelForCausalLM.from_pretrained(options.model_path, load_in_8bit=options.load_in_8bit, device_map=device)
 
     if options.lora_path:
         model = PeftModel.from_pretrained(model, model_id=options.lora_path)
 
-    prompt = "Do NER: A brown teddy bear in an orange shirt and some people."
+    prompt = input("User prompt:")
     messages = [
         {"role": "user", "content": prompt}
     ]
@@ -42,6 +42,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-path", type=str)
     parser.add_argument("--lora-path", type=str)
+    parser.add_argument("--load-in-8bit", action="store_true")
     options = parser.parse_args()
     return options
 
