@@ -44,9 +44,20 @@ class MiniCPMModel(BaseModel):
                 image=image,
                 msgs=messages,
                 tokenizer=self.tokenizer,
-                **model_params)
+                **model_params,
+                stream=True)
 
-            chatbot[-1][-1] = response
+            for item in response:
+                if self.stop_event.is_set():
+                    break
+
+                if item:
+                    chatbot[-1][-1] += item
+                    yield chatbot
 
         self.stop_event.clear()
-        yield chatbot
+
+        #     chatbot[-1][-1] = response
+
+        # self.stop_event.clear()
+        # yield chatbot
