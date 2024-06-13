@@ -13,6 +13,7 @@ from modules.AutoModel import AutoModel
 from modules.GGUFModel import GGUFModel
 from modules.QwenVLModel import QwenVLModel
 from modules.LLaVAModel import LLaVAModel
+from modules.MiniCPMModel import MiniCPMModel
 
 from utils.download_utils import get_model_list
 import utils.ui_utils as ui_utils
@@ -90,6 +91,8 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx) -> Tuple[str, str]:
         meta_info = f'block count {block_count}'
     elif model_type == ModelType.LLaVA:
         shared.model = LLaVAModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
+    elif model_type == ModelType.MiniCPM:
+        shared.model = MiniCPMModel(model_path)
     elif model_type == ModelType.QWEN_VL:
         shared.model = QwenVLModel(model_path)
     else:
