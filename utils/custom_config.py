@@ -3,10 +3,12 @@ from collections import defaultdict
 
 
 class CustomConfig:
-    def __init__(self, model_name, n_gpu_layers=-1, n_ctx_1024=1, **kwargs):
+    def __init__(self, model_name, n_gpu_layers=-1, n_ctx_1024=1, lora_path=None, load_in_8bit=False, **kwargs):
         self.model_name = model_name
         self.n_gpu_layers = n_gpu_layers
         self.n_ctx_1024 = n_ctx_1024
+        self.lora_path = lora_path
+        self.load_in_8bit = load_in_8bit
 
 
 class CustomConfigs:
@@ -31,7 +33,9 @@ class CustomConfigs:
         data = {
             config.model_name: {
                 'n_gpu_layers': config.n_gpu_layers,
-                'n_ctx_1024': config.n_ctx_1024
+                'n_ctx_1024': config.n_ctx_1024,
+                'lora_path': config.lora_path,
+                'load_in_8bit': config.load_in_8bit
             }
             for config in self._configs.values()
         }

@@ -51,18 +51,21 @@ def add_file(history, task_history, file):
         return history, task_history
 
 
-def on_model_selection_change(model_list_dropdown, n_gpu_layers, n_ctx_1024):
+def on_model_selection_change(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit):
     model_name = model_list_dropdown
 
     config = shared.custom_configs.try_get(model_name)
     if config is not None:
         n_gpu_layers = config.n_gpu_layers
         n_ctx_1024 = config.n_ctx_1024
+        lora_path = config.lora_path
+        load_in_8bit = config.load_in_8bit
 
-    return n_gpu_layers, n_ctx_1024
+
+    return n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit
 
 
-def load_model(model_list_dropdown, n_gpu_layers, n_ctx) -> Tuple[str, str]:
+def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit) -> Tuple[str, str]:
     """
     Parameters:
         model_list_dropdown: model name
@@ -78,13 +81,14 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx) -> Tuple[str, str]:
     else:
         print('shared.model is None')
 
-    model_name = model_list_dropdown
-    model_path = osp.join(ROOT_DIR, model_name)
+    lora_name = lora_path.split('/')[-1] if lora_path else ''
+    model_description = model_list_dropdown + (f' (LORA: {lora_name})' if lora_path else "")
+    model_path = osp.join(ROOT_DIR, model_list_dropdown)
     model_type = get_model_type(model_path)
     meta_info = ''
 
     if model_type in [ModelType.GPTQ, ModelType.Other]:
-        shared.model = AutoModel(model_path)
+        shared.model = AutoModel(model_path, lora_path=lora_path, load_in_8bit=load_in_8bit)
     elif model_type == ModelType.GGUF:
         shared.model = GGUFModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
         block_count = get_block_count_from_llama_meta(shared.model.llm.metadata)
@@ -98,13 +102,13 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx) -> Tuple[str, str]:
     else:
         raise NotImplementedError(f'Unsupported model type: {model_type}')
 
-    return f'Model loaded: {model_name}' + (f' ({meta_info})' if meta_info else ''), get_gpu_memory_usage()
+    return f'Model loaded: {model_description} ' + (f' ({meta_info})' if meta_info else ''), get_gpu_memory_usage()
 
 
-def save_custom_config(model_list_dropdown, n_gpu_layers, n_ctx_1024):
+def save_custom_config(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit):
     """Save custom model config. See also `load_model`
     """
-    shared.custom_configs.add(CustomConfig(model_list_dropdown, n_gpu_layers, n_ctx_1024))
+    shared.custom_configs.add(CustomConfig(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit))
     shared.custom_configs.save_to_json()
 
 
@@ -191,6 +195,8 @@ def main(args):
             with gr.Row():
                 with gr.Column(scale=5):
                     model_list_dropdown = gr.Dropdown(get_model_list(ROOT_DIR), label='Models', interactive=True)
+                    lora_path = gr.Textbox(placeholder="Path to Lora model (For transformers library models)", value='',
+                                             show_label=False, max_lines=1, container=False)
                     with gr.Row():
                         model_refresh_btn = gr.Button('🔃 Refresh')
                         model_refresh_btn.click(lambda: gr.Dropdown(get_model_list(ROOT_DIR)),
@@ -202,6 +208,8 @@ def main(args):
                                                       minimum=-1, maximum=200, step=1, interactive=True)
                         ctx_length_slider = gr.Slider(label='Context window length (K)', info='For GGUF', value=1,
                                                       minimum=1, maximum=32, step=1, interactive=True)
+                    with gr.Row():
+                        load_in_8bit_checkbox = gr.Checkbox(label='Load in 8-bit', info='For transformers library models')
 
                     model_param_elements['system_prompt'] = gr.Textbox(
                         show_label=False, placeholder='System prompt...', container=False)
@@ -218,12 +226,14 @@ def main(args):
                     gpu_usage_label = gr.Markdown()
 
             download_btn.click(download_file, inputs=[hf_model_tag, hf_filename], outputs=[model_status_label])
-            model_load_btn.click(load_model, inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider],
+            model_load_btn.click(load_model,
+                                 inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox],
                                  outputs=[model_status_label, gpu_usage_label])
-            model_save_btn.click(save_custom_config, inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider])
+            model_save_btn.click(save_custom_config,
+                                 inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
             model_list_dropdown.change(on_model_selection_change,
-                                       [model_list_dropdown, gpu_layers_slider, ctx_length_slider],
-                                       [gpu_layers_slider, ctx_length_slider])
+                                       [model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox],
+                                       [gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
 
         gr.Markdown(ui_utils.SUPPORTED_MODELS_TEXT)
 

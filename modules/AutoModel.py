@@ -2,20 +2,25 @@ from typing import List
 from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
 from threading import Thread
 import torch
+from peft import PeftModel
 from modules.BaseModel import BaseModel
 
 
 class AutoModel(BaseModel):
     """For unquantized models, GPTQ and AWQ using transformers
     """
-    _chat_completion_params = ['temperature', 'top_p', 'top_k', 'repeat_penalty']
-    def __init__(self, model_path):
+    _chat_completion_params = ['temperature', 'top_p', 'top_k', 'repetition_penalty']
+    def __init__(self, model_path, lora_path=None,load_in_8bit=False):
         super().__init__()
 
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self._tokenizer = AutoTokenizer.from_pretrained(model_path)
 
         # model.dtype will be set to torch.float16 if GPTQ is used
-        self.core_model = AutoModelForCausalLM.from_pretrained(model_path, device_map='cuda').eval()
+        self.llm = AutoModelForCausalLM.from_pretrained(model_path, load_in_8bit=load_in_8bit, device_map=self.device)
+        if lora_path:
+            self.llm = PeftModel.from_pretrained(self.llm, model_id=lora_path)
+        self.llm.eval()
 
         # If model_max_length is set in tokenizer, use it; otherwise, use 4*1024
         self._model_max_length = self._tokenizer.model_max_length if self._tokenizer.model_max_length < 400*1024 else 4*1024
@@ -45,7 +50,7 @@ class AutoModel(BaseModel):
         else:
             model_params, system_prompt, _ = BaseModel.gather_params(params, self._chat_completion_params)
             stop = self.StopOnTokens()
-            model_inputs = self._tokenize(chatbot, system_prompt).to('cuda')
+            model_inputs = self._tokenize(chatbot, system_prompt).to(self.device)
             streamer = TextIteratorStreamer(
                 self._tokenizer, timeout=60, skip_prompt=True, skip_special_tokens=True
             )
@@ -57,7 +62,7 @@ class AutoModel(BaseModel):
                 'max_length': self._model_max_length,
                 **model_params
             }
-            t = Thread(target=self.core_model.generate, kwargs=generate_kwargs)
+            t = Thread(target=self.llm.generate, kwargs=generate_kwargs)
             t.start()
 
             for new_token in streamer:

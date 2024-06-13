@@ -7,10 +7,13 @@ torchvision>=0.17.1
 transformers>=4.37.2
 
 # For GPTQ and AWQ
-auto-gptq
+auto-gptq --no-build-isolation # See https://github.com/AutoGPTQ/AutoGPTQ
 autoawq
 accelerate
 optimum
+
+# For online quantization
+bitsandbytes
 
 # For GGUF
 https://github.com/oobabooga/llama-cpp-python-cuBLAS-wheels/releases/download/cpu/llama_cpp_python-0.2.75+cpuavx2-cp311-cp311-linux_x86_64.whl
