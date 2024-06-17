@@ -45,7 +45,7 @@
             },
             "args": [
                 "--model-path",
-                "models/hf/Qwen1.5-0.5B-Chat"
+                "weights/hf/Qwen1.5-0.5B-Chat"
             ]
         },
         {
@@ -59,7 +59,7 @@
             },
             "args": [
                 "--model-path",
-                "models/hf/Qwen1.5-1.8B-Chat",
+                "weights/hf/Qwen1.5-1.8B-Chat",
                 "--lora-path",
                 "~/workspace/github/Qwen1.5/examples/sft/output_qwen"
             ],
@@ -76,7 +76,7 @@
             },
             "args": [
                 "--model-path",
-                "models/hf/Qwen1.5-4B-Chat",
+                "weights/hf/Qwen1.5-4B-Chat",
                 "--lora-path",
                 "models/lora/Qwen1.5_4B_writer",
                 "--load-in-8bit"
@@ -90,7 +90,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--checkpoint-path",
-                "models/hf/Mixtral-8x7B-Instruct-v0.1-GPTQ"
+                "weights/hf/Mixtral-8x7B-Instruct-v0.1-GPTQ"
             ],
             "justMyCode": false
         },
@@ -102,7 +102,7 @@
             "console": "integratedTerminal",
             "args": [
                 "--checkpoint-path",
-                "models/hf/qwen1_5-14b-chat-q5_0.gguf"
+                "weights/hf/qwen1_5-14b-chat-q5_0.gguf"
             ],
             "justMyCode": false
         }

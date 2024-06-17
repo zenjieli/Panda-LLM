@@ -8,9 +8,9 @@ def image_to_base64_data_uri(file_path):
         base64_data = base64.b64encode(img_file.read()).decode("utf-8")
         return f"data:image/png;base64,{base64_data}"
 
-chat_handler = Llava15ChatHandler(clip_model_path="models/hf/LLaVA-v1.6-vicuna-13b/mmproj-model-f16.gguf")
+chat_handler = Llava15ChatHandler(clip_model_path="weights/hf/LLaVA-v1.6-vicuna-13b/mmproj-model-f16.gguf")
 llm = Llama(
-    model_path="models/hf/LLaVA-v1.6-vicuna-13b/llava-v1.6-vicuna-13b.Q5_K_M.gguf",
+    model_path="weights/hf/LLaVA-v1.6-vicuna-13b/llava-v1.6-vicuna-13b.Q5_K_M.gguf",
     chat_handler=chat_handler,
     # n_ctx=2048,  # n_ctx should be increased to accommodate the image embedding
     n_ctx=4096,

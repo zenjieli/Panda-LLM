@@ -29,7 +29,7 @@ If training is not needed, one can install the CUDA Runtime instead:
 conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime
 ```
 * Install the packages in requirements.txt
-* Create a soft link to the model directory
+* Create a symbolic link `weights` to the model directory
 
 ## models
 

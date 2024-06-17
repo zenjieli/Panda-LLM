@@ -90,7 +90,7 @@ def load_image(image_file, input_size=448, max_num=6):
     return pixel_values
 
 
-path = "models/hf/Mini-InternVL-Chat-2B-V1-5"
+path = "weights/hf/Mini-InternVL-Chat-2B-V1-5"
 model = AutoModel.from_pretrained(
     path,
     torch_dtype=torch.bfloat16,

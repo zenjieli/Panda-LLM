@@ -20,7 +20,7 @@ import utils.ui_utils as ui_utils
 from utils.custom_config import CustomConfig
 from modules import shared
 
-ROOT_DIR = 'models/hf'
+ROOT_DIR = 'weights/hf'
 
 
 def update_model_list():
@@ -96,7 +96,7 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
     elif model_type == ModelType.LLaVA:
         shared.model = LLaVAModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
     elif model_type == ModelType.MiniCPM:
-        shared.model = MiniCPMModel(model_path)
+        shared.model = MiniCPMModel(model_path, load_in_8bit=load_in_8bit)
     elif model_type == ModelType.QWEN_VL:
         shared.model = QwenVLModel(model_path)
     else:

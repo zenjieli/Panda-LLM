@@ -1,22 +1,31 @@
 """
 Support MiniCPM with transformers library
 """
-
-import os
-import os.path as osp
 from PIL import Image
 from typing import List
 from modules.BaseModel import BaseModel
-from transformers import AutoModel, AutoTokenizer
+from transformers import AutoConfig, AutoModel, AutoTokenizer, BitsAndBytesConfig
 
 
 class MiniCPMModel(BaseModel):
     _chat_completion_params = ["temperature", "top_p", "top_k", "repetition_penalty"]
 
-    def __init__(self, model_path) -> None:
+    def __init__(self, model_path, load_in_8bit=False) -> None:
         super().__init__()
 
-        self.llm = AutoModel.from_pretrained(model_path, trust_remote_code=True)
+        if load_in_8bit:  # Check if load_in_8bit is needed
+            config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+            if hasattr(config, 'quantization_config') and \
+                    (config.quantization_config.get("load_in_8bit", False) or config.quantization_config.get("load_in_4bit", False)):
+                load_in_8bit = False
+
+        if load_in_8bit:
+            q_config = BitsAndBytesConfig(
+                load_in_8bit=True,
+                llm_int8_skip_modules=['out_proj', 'kv_proj', 'lm_head'])
+
+        self.llm = AutoModel.from_pretrained(model_path, trust_remote_code=True, quantization_config=q_config) \
+            if load_in_8bit else AutoModel.from_pretrained(model_path, trust_remote_code=True)
         self.llm.eval()
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
@@ -25,7 +34,7 @@ class MiniCPMModel(BaseModel):
 
     def chatbot_to_messages(self, chatbot, system_prompt) -> List[str]:
         messages = [{"role": "system", "content": system_prompt}] if system_prompt else []
-        for idx, (user_msg, model_msg) in enumerate(chatbot):
+        for _, (user_msg, model_msg) in enumerate(chatbot):
             if isinstance(user_msg, (tuple, list)):  # query is image path
                 image = Image.open(user_msg[0]).convert('RGB')
             else:  # query is text
@@ -56,8 +65,3 @@ class MiniCPMModel(BaseModel):
                     yield chatbot
 
         self.stop_event.clear()
-
-        #     chatbot[-1][-1] = response
-
-        # self.stop_event.clear()
-        # yield chatbot

@@ -4,7 +4,7 @@ from huggingface_hub import hf_hub_download, snapshot_download
 
 
 def download_file(hf_model_tag, filename):
-    local_dir = 'models/hf'
+    local_dir = 'weights/hf'
 
     # repo_id is the substring of hf_model_tag before :, revision is the substring after :
     substrings = hf_model_tag.split(':')

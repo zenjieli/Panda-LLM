@@ -1,7 +1,7 @@
 from transformers import AutoModelForCausalLM, AutoTokenizer
 device = 'cuda' # the device to load the model onto
 
-model_path = 'models/hf/Qwen1.5-1.8B-Chat'
+model_path = 'weights/hf/Qwen1.5-1.8B-Chat'
 model = AutoModelForCausalLM.from_pretrained(
     model_path,
     torch_dtype='auto',
