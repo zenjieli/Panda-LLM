@@ -21,7 +21,11 @@
             "request": "launch",
             "program": "webui.py",
             "console": "integratedTerminal",
-            "justMyCode": false
+            "justMyCode": false,
+            "args": [
+                "--server-name",
+                "0.0.0.0"
+            ]
         },
         {
             "name": "Webui: Single GPU",
