@@ -6,6 +6,7 @@ import utils.text_processing as text_processing
 class BaseModel:
     def __init__(self) -> None:
         self.stop_event = Event()
+        self.core_model = None
 
     def predict(self):
         pass

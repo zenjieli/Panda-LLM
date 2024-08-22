@@ -1,3 +1,5 @@
+import os
+import os.path as osp
 from typing import List
 from llama_cpp_cuda_tensorcores import Llama, llama_chat_format
 from modules.BaseModel import BaseModel
@@ -10,15 +12,26 @@ class GGUFModel(BaseModel):
 
     def __init__(self, model_path, gpu_layers, n_ctx) -> None:
         super().__init__()
-        self.llm = Llama(model_path=model_path, n_gpu_layers=gpu_layers, n_ctx=n_ctx)
+
+        # if model_path is a directory, find the first gguf file in the directory
+        if osp.isfile(model_path):
+            if model_path.lower().endswith(".gguf"):
+                model_path = model_path
+        elif osp.isdir(model_path):
+            model_path = next((osp.join(model_path, f) for f in os.listdir(model_path) if f.lower().endswith(".gguf")), None)
+
+        if model_path is None:
+            raise FileNotFoundError(f".gguf file not found in {model_path}.")
+
+        self.core_model = Llama(model_path=model_path, n_gpu_layers=gpu_layers, n_ctx=n_ctx)
         self._chat_formatter = self._find_chat_formatter()
         self._ctx_size = n_ctx
 
     def _find_chat_formatter(self) -> llama_chat_format.ChatFormatter:
-        llm = self.llm
-        if self.llm.chat_format == 'chatml':
+        llm = self.core_model
+        if self.core_model.chat_format == 'chatml':
             return llama_chat_format.format_chatml
-        elif self.llm.chat_format == 'mistral-instruct':
+        elif self.core_model.chat_format == 'mistral-instruct':
             return llama_chat_format.format_mistral_instruct
         else:
             template = llm.metadata["tokenizer.chat_template"]
@@ -40,7 +53,7 @@ class GGUFModel(BaseModel):
         return token_count < self._ctx_size
 
     def try_tokenize(self, chatbot, system_prompt) -> List:
-        tokenizer = self.llm.tokenizer()
+        tokenizer = self.core_model.tokenizer()
         if not tokenizer:
             return []
 
@@ -60,7 +73,7 @@ class GGUFModel(BaseModel):
             model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(params, self._chat_completion_params)
 
             messages = BaseModel.chatbot_to_messages(chatbot, system_prompt = system_prompt)
-            output = self.llm.create_chat_completion(messages=messages, stream=True, **model_params)
+            output = self.core_model.create_chat_completion(messages=messages, stream=True, **model_params)
 
             postprocessor = CJKPostprocessing(enable_postprocessing)
             for item in output:

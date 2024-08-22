@@ -17,7 +17,7 @@ class QwenVLModel(BaseModel):
         self._tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
         # self.__llm.dtype will be set to torch.float16 for GPTQ models
-        self._llm = AutoModelForCausalLM.from_pretrained(model_path, device_map='cuda', trust_remote_code=True).eval()
+        self.core_model = AutoModelForCausalLM.from_pretrained(model_path, device_map='cuda', trust_remote_code=True).eval()
 
         self._uploaded_file_dir = osp.join(tempfile.gettempdir(), "gradio")
 
@@ -95,7 +95,7 @@ class QwenVLModel(BaseModel):
 
         history, message = history_filter[:-1], history_filter[-1][0]
 
-        for response in self._llm.chat_stream(self._tokenizer, message, history=history):
+        for response in self.core_model.chat_stream(self._tokenizer, message, history=history):
             if self.stop_event.is_set():
                 break
 

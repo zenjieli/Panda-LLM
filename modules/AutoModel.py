@@ -17,10 +17,10 @@ class AutoModel(BaseModel):
         self._tokenizer = AutoTokenizer.from_pretrained(model_path)
 
         # model.dtype will be set to torch.float16 if GPTQ is used
-        self.llm = AutoModelForCausalLM.from_pretrained(model_path, load_in_8bit=load_in_8bit, device_map=self.device)
+        self.core_model = AutoModelForCausalLM.from_pretrained(model_path, load_in_8bit=load_in_8bit, device_map='auto')
         if lora_path:
-            self.llm = PeftModel.from_pretrained(self.llm, model_id=lora_path)
-        self.llm.eval()
+            self.core_model = PeftModel.from_pretrained(self.core_model, model_id=lora_path)
+        self.core_model.eval()
 
         # If model_max_length is set in tokenizer, use it; otherwise, use 4*1024
         self._model_max_length = self._tokenizer.model_max_length if self._tokenizer.model_max_length < 400*1024 else 4*1024
@@ -62,7 +62,7 @@ class AutoModel(BaseModel):
                 'max_length': self._model_max_length,
                 **model_params
             }
-            t = Thread(target=self.llm.generate, kwargs=generate_kwargs)
+            t = Thread(target=self.core_model.generate, kwargs=generate_kwargs)
             t.start()
 
             for new_token in streamer:

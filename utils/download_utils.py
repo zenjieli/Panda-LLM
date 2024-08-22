@@ -25,6 +25,8 @@ def download_file(hf_model_tag, filename):
 
 def get_model_list(root_dir):
     # get all the subdirectories and files in root_dir
-    items = [osp.basename(item) for item in os.listdir(root_dir) if not item.startswith('.')]
+    items = []
+    if osp.exists(root_dir):
+        items = [osp.basename(item) for item in os.listdir(root_dir) if not item.startswith('.')]
     items.sort(key=str.lower)
     return items

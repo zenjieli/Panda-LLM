@@ -61,7 +61,6 @@ def on_model_selection_change(model_list_dropdown, n_gpu_layers, n_ctx_1024, lor
         lora_path = config.lora_path
         load_in_8bit = config.load_in_8bit
 
-
     return n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit
 
 
@@ -91,7 +90,7 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
         shared.model = AutoModel(model_path, lora_path=lora_path, load_in_8bit=load_in_8bit)
     elif model_type == ModelType.GGUF:
         shared.model = GGUFModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
-        block_count = get_block_count_from_llama_meta(shared.model.llm.metadata)
+        block_count = get_block_count_from_llama_meta(shared.model.core_model.metadata)
         meta_info = f'block count {block_count}'
     elif model_type == ModelType.LLaVA:
         shared.model = LLaVAModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
@@ -102,7 +101,11 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
     else:
         raise NotImplementedError(f'Unsupported model type: {model_type}')
 
-    return f'Model loaded: {model_description} ' + (f' ({meta_info})' if meta_info else ''), get_gpu_memory_usage()
+    # Get the number of parameters in shared.model
+    num_params = sum(p.numel() for p in shared.model.core_model.parameters())
+
+    return f'Model loaded: {model_description} ' + (f' ({meta_info})' if meta_info else '') + \
+        f' Parameters: {num_params/1024/1024/1024:.1f}B', get_gpu_memory_usage()
 
 
 def save_custom_config(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit):
@@ -196,7 +199,7 @@ def main(args):
                 with gr.Column(scale=5):
                     model_list_dropdown = gr.Dropdown(get_model_list(ROOT_DIR), label='Models', interactive=True)
                     lora_path = gr.Textbox(placeholder="Path to Lora model (For transformers library models)", value='',
-                                             show_label=False, max_lines=1, container=False)
+                                           show_label=False, max_lines=1, container=False)
                     with gr.Row():
                         model_refresh_btn = gr.Button('🔃 Refresh')
                         model_refresh_btn.click(lambda: gr.Dropdown(get_model_list(ROOT_DIR)),
@@ -227,7 +230,8 @@ def main(args):
 
             download_btn.click(download_file, inputs=[hf_model_tag, hf_filename], outputs=[model_status_label])
             model_load_btn.click(load_model,
-                                 inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox],
+                                 inputs=[model_list_dropdown, gpu_layers_slider,
+                                         ctx_length_slider, lora_path, load_in_8bit_checkbox],
                                  outputs=[model_status_label, gpu_usage_label])
             model_save_btn.click(save_custom_config,
                                  inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])

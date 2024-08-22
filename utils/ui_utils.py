@@ -1,6 +1,6 @@
 import os.path as osp
 
-SUPPORTED_MODELS_TEXT = '<center><font size=2><b>Supported models</b>: Mistral, QWen1.5, QWen-VL, Yi </center>'
+SUPPORTED_MODELS_TEXT = '<center><font size=2><b>Supported models</b>: Mistral, QWen, QWen-VL, Yi, MiniCPM-V </center>'
 
 DOWNLOAD_MODEL_INSTRUCTION = 'Hugging Face username/model path, for instance: facebook/galactica-125m. To specify a branch, add it at the end after a \":\" character like this: facebook/galactica-125m:main.'
 
