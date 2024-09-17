@@ -10,7 +10,6 @@ import gc
 import utils.text_processing as text_processing
 from utils.model_utils import ModelType, get_model_type, get_block_count_from_llama_meta
 from modules.AutoModel import AutoModel
-from modules.GGUFModel import GGUFModel
 from modules.QwenVLModel import QwenVLModel
 from modules.LLaVAModel import LLaVAModel
 from modules.MiniCPMModel import MiniCPMModel
@@ -89,6 +88,7 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
     if model_type in [ModelType.GPTQ, ModelType.Other]:
         shared.model = AutoModel(model_path, lora_path=lora_path, load_in_8bit=load_in_8bit)
     elif model_type == ModelType.GGUF:
+        from modules.GGUFModel import GGUFModel
         shared.model = GGUFModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
         block_count = get_block_count_from_llama_meta(shared.model.core_model.metadata)
         meta_info = f'block count {block_count}'
