@@ -1,10 +1,11 @@
 # Requires python=3.11
+# torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cu121
 # Refer to oobabooga/text-generation-webui/blob/main/requirements.txt for the packages from github.com
 
 gradio>=4.19.2
-torch>=2.2.1
-torchvision>=0.17.1
-transformers>=4.37.2
+torch>=2.2.2
+torchvision>=0.17.2
+transformers>=4.44.2
 
 # For GPTQ and AWQ
 auto-gptq --no-build-isolation # See https://github.com/AutoGPTQ/AutoGPTQ

@@ -6,7 +6,6 @@ from PIL import Image
 from typing import List
 from modules.BaseModel import BaseModel
 from transformers import AutoConfig, AutoModel, AutoTokenizer, BitsAndBytesConfig
-from calflops import calculate_flops
 
 
 class MiniCPMModel(BaseModel):
@@ -18,8 +17,8 @@ class MiniCPMModel(BaseModel):
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         dtype = config.torch_dtype if hasattr(config, "torch_dtype") else torch.float16
         kwargs = {"trust_remote_code": True,
-                "device_map": "cuda",
-                "torch_dtype": dtype}
+                  "device_map": "cuda",
+                  "torch_dtype": dtype}
         if hasattr(config, "version") and config.version == 2.6:
             kwargs["attn_implementation"] = "sdpa"
 
@@ -37,7 +36,6 @@ class MiniCPMModel(BaseModel):
         self.core_model = AutoModel.from_pretrained(model_path, **kwargs)
         self.core_model.eval()
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-
 
     def dtype_in_config(config):
         # if torch_dtype exists in config, return it; otherwise, return float16

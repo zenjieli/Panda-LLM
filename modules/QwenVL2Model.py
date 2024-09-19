@@ -6,11 +6,12 @@ from PIL import Image
 from typing import List
 from modules.BaseModel import BaseModel
 from transformers import AutoConfig
-from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 
 
 class QwenVL2Model(BaseModel):
     def __init__(self, model_path) -> None:
+        from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+
         super().__init__()
 
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
@@ -21,7 +22,7 @@ class QwenVL2Model(BaseModel):
             attn_implementation="flash_attention_2",
             device_map="auto",
         )
-        self.core_model.eval() # Set the model in eval mode explicitly even though not needed
+        self.core_model.eval()  # Set the model in eval mode explicitly even though not needed
 
         self.processor = AutoProcessor.from_pretrained(model_path)
 
