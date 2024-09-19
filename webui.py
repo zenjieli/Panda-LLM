@@ -11,6 +11,7 @@ import utils.text_processing as text_processing
 from utils.model_utils import ModelType, get_model_type, get_block_count_from_llama_meta
 from modules.AutoModel import AutoModel
 from modules.QwenVLModel import QwenVLModel
+from modules.QwenVL2Model import QwenVL2Model
 from modules.LLaVAModel import LLaVAModel
 from modules.MiniCPMModel import MiniCPMModel
 
@@ -98,6 +99,8 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
         shared.model = MiniCPMModel(model_path, load_in_8bit=load_in_8bit)
     elif model_type == ModelType.QWEN_VL:
         shared.model = QwenVLModel(model_path)
+    elif model_type == ModelType.QWEN2_VL:
+        shared.model = QwenVL2Model(model_path)
     else:
         raise NotImplementedError(f'Unsupported model type: {model_type}')
 
@@ -173,7 +176,7 @@ def main(args):
 
             with gr.Row():
                 with gr.Column(scale=4):
-                    user_input = gr.Textbox(show_label=False, placeholder='Input...', container=False)
+                    user_input = gr.Textbox(placeholder='Input...', container=False)
                     task_history = gr.State([])
                     model_param_elements['task_history'] = task_history
                     with gr.Row():

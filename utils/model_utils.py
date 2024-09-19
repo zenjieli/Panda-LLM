@@ -5,6 +5,7 @@ class ModelType(Enum):
     GPTQ = 'gptq'
     GGUF = 'gguf'
     QWEN_VL = 'qwen-vl'
+    QWEN2_VL = 'qwen2-vl'
     LLaVA = 'llava'
     MiniCPM = 'minicpm'
     Other = 'other'
