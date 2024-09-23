@@ -22,11 +22,19 @@ def download_file(hf_model_tag, filename):
     except Exception as e:
         return f'Downloading failed: {str(e)}'
 
+def get_cached_model_ids():
+    from transformers import TRANSFORMERS_CACHE
+
+    # List all model directories. A dir is like "models--org--model_name"
+    model_dirs = [d for d in os.listdir(TRANSFORMERS_CACHE) if d.startswith("models--")]
+
+    # Extract model IDs, like "org/model_name"
+    return ["/".join(d.split("--")[1:]) for d in model_dirs]
 
 def get_model_list(root_dir):
     # get all the subdirectories and files in root_dir
-    items = []
+    items = get_cached_model_ids()
     if osp.exists(root_dir):
-        items = [osp.basename(item) for item in os.listdir(root_dir) if not item.startswith('.')]
+        items.extend([osp.basename(item) for item in os.listdir(root_dir) if not item.startswith('.')])
     items.sort(key=str.lower)
     return items

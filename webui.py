@@ -82,7 +82,8 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
 
     lora_name = lora_path.split('/')[-1] if lora_path else ''
     model_description = model_list_dropdown + (f' (LORA: {lora_name})' if lora_path else "")
-    model_path = osp.join(ROOT_DIR, model_list_dropdown)
+
+    model_path = osp.join(ROOT_DIR, model_list_dropdown) if "/" not in model_list_dropdown else model_list_dropdown
     model_type = get_model_type(model_path)
     meta_info = ''
 
@@ -104,8 +105,11 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
     else:
         raise NotImplementedError(f'Unsupported model type: {model_type}')
 
-    # Get the number of parameters in shared.model
-    num_params = sum(p.numel() for p in shared.model.core_model.parameters())
+    # Get the number of parameters in shared.model    
+    if isinstance(shared.model, AutoModel):
+        num_params = sum(p.numel() for p in shared.model.core_model.parameters())
+    else:
+        num_params = -1 # Unknown
 
     return f'Model loaded: {model_description} ' + (f' ({meta_info})' if meta_info else '') + \
         f' Parameters: {num_params/1024/1024/1024:.1f}B', get_gpu_memory_usage()
