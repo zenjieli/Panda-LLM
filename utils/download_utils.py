@@ -4,19 +4,15 @@ from huggingface_hub import hf_hub_download, snapshot_download
 
 
 def download_file(hf_model_tag, filename):
-    local_dir = 'weights/hf'
-
     # repo_id is the substring of hf_model_tag before :, revision is the substring after :
     substrings = hf_model_tag.split(':')
     repo_id, revision = hf_model_tag.split(':') if ':' in hf_model_tag else (substrings[0], None)
-    subdir = '' if filename else repo_id.split('/')[-1]
 
     try:
         if filename:
-            result = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision,
-                                     local_dir=local_dir, local_dir_use_symlinks=False)
+            result = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision)
         else:
-            result = snapshot_download(repo_id=repo_id, revision=revision, local_dir=osp.join(local_dir, subdir), local_dir_use_symlinks=False)
+            result = snapshot_download(repo_id=repo_id, revision=revision)
 
         return f'Downloaded to {osp.join(os.getcwd(), result)}' if osp.exists(result) else result
     except Exception as e:
