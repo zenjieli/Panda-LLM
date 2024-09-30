@@ -14,6 +14,9 @@ from modules.QwenVLModel import QwenVLModel
 from modules.QwenVL2Model import QwenVL2Model
 from modules.LLaVAModel import LLaVAModel
 from modules.MiniCPMModel import MiniCPMModel
+from modules.PhiVisionModel import PhiVisionModel
+from modules.LlavaOneVisionModel import LlavaOneVisionModel
+from modules.InternVL2Model import InternVL2Model
 
 from utils.download_utils import get_model_list
 import utils.ui_utils as ui_utils
@@ -102,14 +105,17 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
         shared.model = QwenVLModel(model_path)
     elif model_type == ModelType.QWEN2_VL:
         shared.model = QwenVL2Model(model_path)
+    elif model_type == ModelType.PhiVision:
+        shared.model = PhiVisionModel(model_path)
+    elif model_type == ModelType.LLaVA_OneVision:
+        shared.model = LlavaOneVisionModel(model_path)
+    elif model_type == ModelType.InternVL2:
+        shared.model = InternVL2Model(model_path)
     else:
         raise NotImplementedError(f'Unsupported model type: {model_type}')
 
-    # Get the number of parameters in shared.model    
-    if isinstance(shared.model, AutoModel):
-        num_params = sum(p.numel() for p in shared.model.core_model.parameters())
-    else:
-        num_params = -1 # Unknown
+    # Get the number of parameters in shared.model
+    num_params = shared.model.num_params()
 
     return f'Model loaded: {model_description} ' + (f' ({meta_info})' if meta_info else '') + \
         f' Parameters: {num_params/1024/1024/1024:.1f}B', get_gpu_memory_usage()

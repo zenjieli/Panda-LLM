@@ -1,5 +1,5 @@
 from threading import Event
-from typing import List, Tuple
+import torch
 import utils.text_processing as text_processing
 
 
@@ -7,14 +7,27 @@ class BaseModel:
     def __init__(self) -> None:
         self.stop_event = Event()
         self.core_model = None
+        self.supports_flash_attention = self.__supports_flash_attention()
 
     def predict(self):
         pass
 
+    @staticmethod
+    def __supports_flash_attention():
+        """Check if a GPU supports FlashAttention.
+        """
+        for device_id in range(torch.cuda.device_count()):
+            major, _ = torch.cuda.get_device_capability(device_id)
+            # Returns false unless the GPU architecture is Ampere (SM 8.x) or newer (SM 9.0)
+            if major < 8:
+                return False
+
+        return True
+
     def support_image(self):
         return False
 
-    def append_user_input(self, query: str, chatbot: List[List]) -> Tuple[str, List[List]]:
+    def append_user_input(self, query: str, chatbot: list[list]) -> tuple[str, list[list]]:
         if chatbot is None:
             chatbot = []
 
@@ -23,7 +36,7 @@ class BaseModel:
         else:
             return '', chatbot
 
-    def try_tokenize(self, chatbot, system_prompt) -> List:
+    def try_tokenize(self, chatbot, system_prompt) -> list:
         return []
 
     def check_token_count(self, token_count: int) -> bool:
@@ -31,7 +44,7 @@ class BaseModel:
         """
         return True
 
-    def chatbot_to_messages(chatbot, system_prompt) -> List[str]:
+    def chatbot_to_messages(chatbot, system_prompt) -> list[str]:
         messages = [{'role': 'system', 'content': system_prompt}] if system_prompt else []
         for idx, (user_msg, model_msg) in enumerate(chatbot):
             if idx == len(chatbot) - 1 and not model_msg:
@@ -47,7 +60,7 @@ class BaseModel:
     def tokenizer(self):
         return None
 
-    def gather_params(user_param_elements, expected_params) -> Tuple[dict, str, bool]:
+    def gather_params(user_param_elements, expected_params) -> tuple[dict, str, bool]:
         """Gather model parameters
         Parameters:
             user_param_elements: user input elements
@@ -57,3 +70,9 @@ class BaseModel:
                         for params_name in expected_params if params_name in user_param_elements}
         enable_postprocessing = user_param_elements.get('enable_postprocessing', False)
         return model_params, user_param_elements.get('system_prompt'), enable_postprocessing
+
+    def num_params(self) -> int:
+        if hasattr(self.core_model, "parameters"):
+            return sum(p.numel() for p in self.core_model.parameters())
+        else: # Not supported
+            return 0

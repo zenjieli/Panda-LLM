@@ -3,7 +3,6 @@ Support QwenVL2Model with transformers library
 """
 import torch
 from PIL import Image
-from typing import List
 from modules.BaseModel import BaseModel
 from transformers import AutoConfig
 
@@ -29,7 +28,7 @@ class QwenVL2Model(BaseModel):
     def support_image(self):
         return True
 
-    def chatbot_to_messages(self, chatbot) -> List[str]:
+    def chatbot_to_messages(self, chatbot) -> list[str]:
         messages = []
         content = []
         for _, (user_msg, model_msg) in enumerate(chatbot):
