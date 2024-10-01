@@ -3,12 +3,14 @@ Support QwenVL2Model with transformers library
 """
 import torch
 from PIL import Image
-from modules.BaseModel import BaseModel
+from modules.base_model import BaseModel
 from transformers import AutoConfig
+from modules.model_factory import ModelFactory
 
 
+@ModelFactory.register("qwen-vl2")
 class QwenVL2Model(BaseModel):
-    def __init__(self, model_path) -> None:
+    def __init__(self, model_path, **kwargs) -> None:
         from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 
         super().__init__()

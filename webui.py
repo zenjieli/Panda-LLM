@@ -4,30 +4,20 @@ from argparse import ArgumentParser
 from typing import Tuple, List
 import gradio as gr
 import torch
-import os.path as osp
 import gc
 
 import utils.text_processing as text_processing
-from utils.model_utils import ModelType, get_model_type, get_block_count_from_llama_meta
-from modules.AutoModel import AutoModel
-from modules.QwenVLModel import QwenVLModel
-from modules.QwenVL2Model import QwenVL2Model
-from modules.LLaVAModel import LLaVAModel
-from modules.MiniCPMModel import MiniCPMModel
-from modules.PhiVisionModel import PhiVisionModel
-from modules.LlavaOneVisionModel import LlavaOneVisionModel
-from modules.InternVL2Model import InternVL2Model
-
+from utils.model_utils import get_model_type
+from modules.model_factory import ModelFactory
+from modules.auto_model import AutoModel
+import modules.all_models  # Import models to ensure they are registered
 from utils.download_utils import get_model_list
 import utils.ui_utils as ui_utils
 from utils.custom_config import CustomConfig
 from modules import shared
 
-ROOT_DIR = 'weights/hf'
-
-
 def update_model_list():
-    return gr.Dropdown(choices=get_model_list(ROOT_DIR))
+    return gr.Dropdown(choices=get_model_list())
 
 
 def reset_state(history) -> Tuple[str, str]:
@@ -86,38 +76,28 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
     lora_name = lora_path.split('/')[-1] if lora_path else ''
     model_description = model_list_dropdown + (f' (LORA: {lora_name})' if lora_path else "")
 
-    model_path = osp.join(ROOT_DIR, model_list_dropdown) if "/" not in model_list_dropdown else model_list_dropdown
+    model_path = model_list_dropdown
     model_type = get_model_type(model_path)
     meta_info = ''
 
-    if model_type in [ModelType.GPTQ, ModelType.Other]:
-        shared.model = AutoModel(model_path, lora_path=lora_path, load_in_8bit=load_in_8bit)
-    elif model_type == ModelType.GGUF:
-        from modules.GGUFModel import GGUFModel
-        shared.model = GGUFModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
-        block_count = get_block_count_from_llama_meta(shared.model.core_model.metadata)
-        meta_info = f'block count {block_count}'
-    elif model_type == ModelType.LLaVA:
-        shared.model = LLaVAModel(model_path, gpu_layers=n_gpu_layers, n_ctx=n_ctx * 1024)
-    elif model_type == ModelType.MiniCPM:
-        shared.model = MiniCPMModel(model_path, load_in_8bit=load_in_8bit)
-    elif model_type == ModelType.QWEN_VL:
-        shared.model = QwenVLModel(model_path)
-    elif model_type == ModelType.QWEN2_VL:
-        shared.model = QwenVL2Model(model_path)
-    elif model_type == ModelType.PhiVision:
-        shared.model = PhiVisionModel(model_path)
-    elif model_type == ModelType.LLaVA_OneVision:
-        shared.model = LlavaOneVisionModel(model_path)
-    elif model_type == ModelType.InternVL2:
-        shared.model = InternVL2Model(model_path)
-    else:
+    model_class = ModelFactory.get_model_class(model_path)
+    if model_class == None:
+        model_class = AutoModel
+
+    kwargs = {"lora_path": lora_path,
+              "load_in_8bit": load_in_8bit,
+              "gpu_layers": n_gpu_layers,
+              "n_ctx": n_ctx * 1024}
+
+    shared.model = model_class(model_path, **kwargs)
+    if shared.model == None:
         raise NotImplementedError(f'Unsupported model type: {model_type}')
 
     # Get the number of parameters in shared.model
     num_params = shared.model.num_params()
+    meta_info = shared.model.get_meta_info()
 
-    return f'Model loaded: {model_description} ' + (f' ({meta_info})' if meta_info else '') + \
+    return f'Model loaded: {model_description} ' + f' ({meta_info})' + \
         f' Parameters: {num_params/1024/1024/1024:.1f}B', get_gpu_memory_usage()
 
 
@@ -210,12 +190,12 @@ def main(args):
         with gr.Tab('Models'):
             with gr.Row():
                 with gr.Column(scale=5):
-                    model_list_dropdown = gr.Dropdown(get_model_list(ROOT_DIR), label='Models', interactive=True)
+                    model_list_dropdown = gr.Dropdown(get_model_list(), label='Models', interactive=True)
                     lora_path = gr.Textbox(placeholder="Path to Lora model (For transformers library models)", value='',
                                            show_label=False, max_lines=1, container=False)
                     with gr.Row():
                         model_refresh_btn = gr.Button('🔃 Refresh')
-                        model_refresh_btn.click(lambda: gr.Dropdown(get_model_list(ROOT_DIR)),
+                        model_refresh_btn.click(lambda: gr.Dropdown(get_model_list()),
                                                 inputs=[], outputs=model_list_dropdown)
                         model_load_btn = gr.Button('🚚 Load')
                     model_save_btn = gr.Button('🗄 Save User Config')
@@ -225,7 +205,8 @@ def main(args):
                         ctx_length_slider = gr.Slider(label='Context window length (K)', info='For GGUF', value=1,
                                                       minimum=1, maximum=32, step=1, interactive=True)
                     with gr.Row():
-                        load_in_8bit_checkbox = gr.Checkbox(label='Load in 8-bit', info='For transformers library models')
+                        load_in_8bit_checkbox = gr.Checkbox(
+                            label='Load in 8-bit', info='For transformers library models')
 
                     model_param_elements['system_prompt'] = gr.Textbox(
                         show_label=False, placeholder='System prompt...', container=False)
@@ -249,7 +230,8 @@ def main(args):
             model_save_btn.click(save_custom_config,
                                  inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
             model_list_dropdown.change(on_model_selection_change,
-                                       [model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox],
+                                       [model_list_dropdown, gpu_layers_slider,
+                                           ctx_length_slider, lora_path, load_in_8bit_checkbox],
                                        [gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
 
         gr.Markdown(ui_utils.SUPPORTED_MODELS_TEXT)

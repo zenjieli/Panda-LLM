@@ -4,14 +4,15 @@ import secrets
 import os.path as osp
 from pathlib import Path
 import tempfile
-from modules.BaseModel import BaseModel
+from modules.base_model import BaseModel
+from modules.model_factory import ModelFactory
 
-
+@ModelFactory.register("qwen-vl")
 class QwenVLModel(BaseModel):
     PUNCTUATION = "！？。＂＃＄％＆＇（）＊＋，－／：；＜＝＞＠［＼］＾＿｀｛｜｝～｟｠｢｣､、〃》「」『』【】〔〕〖〗〘〙〚〛〜〝〞〟〰〾〿–—‘’‛“”„‟…‧﹏."
     _task_history = []
 
-    def __init__(self, model_path):
+    def __init__(self, model_path, **kwargs):
         super().__init__()
 
         self._tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)

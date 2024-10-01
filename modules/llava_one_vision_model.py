@@ -1,14 +1,14 @@
 """
-Support QwenVL2Model with transformers library
+Support LlavaOneVisionModel with transformers library
 """
 import torch
 from PIL import Image
-from modules.BaseModel import BaseModel
-from transformers import AutoConfig
+from modules.base_model import BaseModel
+from modules.model_factory import ModelFactory
 
-
+@ModelFactory.register("llava-onevision-qwen2")
 class LlavaOneVisionModel(BaseModel):
-    def __init__(self, model_path) -> None:
+    def __init__(self, model_path, **kwargs) -> None:
         from transformers import LlavaOnevisionForConditionalGeneration, AutoProcessor
 
         super().__init__()

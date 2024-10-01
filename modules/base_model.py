@@ -74,5 +74,8 @@ class BaseModel:
     def num_params(self) -> int:
         if hasattr(self.core_model, "parameters"):
             return sum(p.numel() for p in self.core_model.parameters())
-        else: # Not supported
+        else:  # Not supported
             return 0
+
+    def get_meta_info(self) -> dict:
+        return ""

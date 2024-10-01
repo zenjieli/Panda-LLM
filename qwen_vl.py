@@ -5,8 +5,8 @@ from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
 
 import utils.text_processing as text_processing
 from utils.model_utils import ModelType, get_model_type
-from modules.AutoModel import AutoModel
-from modules.GGUFModel import GGUFModel
+from modules.auto_model import AutoModel
+from modules.gguf_model import GGUFModel
 
 
 def _parse_text(text):

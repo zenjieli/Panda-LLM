@@ -4,14 +4,15 @@ Support MiniCPM with transformers library
 import torch
 from PIL import Image
 from typing import List
-from modules.BaseModel import BaseModel
+from modules.base_model import BaseModel
 from transformers import AutoConfig, AutoModel, AutoTokenizer, BitsAndBytesConfig
+from modules.model_factory import ModelFactory
 
-
+@ModelFactory.register("minicpm")
 class MiniCPMModel(BaseModel):
     _chat_completion_params = ["temperature", "top_p", "top_k", "repetition_penalty"]
 
-    def __init__(self, model_path, load_in_8bit=False) -> None:
+    def __init__(self, model_path, load_in_8bit=False, **kwargs) -> None:
         super().__init__()
 
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)

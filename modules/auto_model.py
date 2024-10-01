@@ -3,14 +3,14 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, 
 from threading import Thread
 import torch
 from peft import PeftModel
-from modules.BaseModel import BaseModel
+from modules.base_model import BaseModel
 
 
 class AutoModel(BaseModel):
     """For unquantized models, GPTQ and AWQ using transformers
     """
     _chat_completion_params = ['temperature', 'top_p', 'top_k', 'repetition_penalty']
-    def __init__(self, model_path, lora_path=None,load_in_8bit=False):
+    def __init__(self, model_path, lora_path=None,load_in_8bit=False, **kwargs):
         super().__init__()
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'

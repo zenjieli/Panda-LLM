@@ -18,8 +18,8 @@ from threading import Thread
 
 from utils.model_utils import ModelType, get_model_type, get_block_count_from_llama_meta
 import modules.shared as shared
-from modules.BaseModel import BaseModel
-from modules.GGUFModel import GGUFModel
+from modules.base_model import BaseModel
+from modules.gguf_model import GGUFModel
 
 from utils.openai_types import (
     ModelCard,

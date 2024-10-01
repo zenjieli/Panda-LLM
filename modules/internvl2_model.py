@@ -3,15 +3,17 @@ Support InternVL2Model with transformers library
 """
 import torch
 from PIL import Image
-from modules.BaseModel import BaseModel
+from modules.base_model import BaseModel
 import torch
 import torchvision.transforms as T
 from PIL import Image
 from torchvision.transforms.functional import InterpolationMode
 from transformers import AutoModel, AutoTokenizer
+from modules.model_factory import ModelFactory
 
+@ModelFactory.register("InternVL2")
 class InternVL2Model(BaseModel):
-    def __init__(self, model_path) -> None:
+    def __init__(self, model_path, **kwargs) -> None:
 
         super().__init__()
 

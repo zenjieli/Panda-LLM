@@ -2,14 +2,15 @@ from PIL import Image
 import torch
 from transformers import AutoModelForCausalLM
 from transformers import AutoProcessor, AutoConfig
-from modules.BaseModel import BaseModel
+from modules.base_model import BaseModel
+from modules.model_factory import ModelFactory
 
-
+@ModelFactory.register("phi-.*-vision")
 class PhiVisionModel(BaseModel):
-    """Support QwenVL2Model with transformers library
+    """Support PhiVisionModel with transformers library
     """
 
-    def __init__(self, model_path) -> None:
+    def __init__(self, model_path, **kwargs) -> None:
         super().__init__()
 
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
