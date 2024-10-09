@@ -8,8 +8,8 @@ from transformers import AutoConfig
 from modules.model_factory import ModelFactory
 
 
-@ModelFactory.register("qwen-vl2")
-class QwenVL2Model(BaseModel):
+@ModelFactory.register("qwen2-vl")
+class Qwen2VLModel(BaseModel):
     def __init__(self, model_path, **kwargs) -> None:
         from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 
