@@ -3,9 +3,8 @@
 - [Panda Webui](#panda-webui)
   - [Installation](#installation)
   - [models](#models)
-    - [Yi](#yi)
   - [Fine tuning](#fine-tuning)
-  - [Known issues](#known-issues)
+  - [Shell script](#shell-script)
 
 
 
@@ -33,13 +32,10 @@ conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime
 
 ## models
 
-### Yi
-
-There is bug in llama.cpp in converting Yi models to `gguf`. See the fix in <https://github.com/01-ai/Yi/blob/main/docs/README_llama.cpp.md>. When using `gguf` models, one should use `chatml` prompt template. A fixed GGUF can be downloaded from onedrive.
-
-**Note**:
-* Yi-34B-34bits will crash the system and files
-* Generally, Yi-34B--GGUF models suffer a lot from illusions and non-stopping replies
+Set the Huggingface cache by setting the environment variable in `.bashrc`:
+```
+export TRANSFORMERS_CACHE=/path_to_cache
+```
 
 
 
@@ -47,13 +43,26 @@ There is bug in llama.cpp in converting Yi models to `gguf`. See the fix in <htt
 
 See [Supervised fine tuning](lora/readme.md).
 
-## Known issues
+## Shell script
 
-* Quantization
-  * The AWQ model does not work properly. It never ends.
-  * Only GGUF works with multiple GPUs
-* Model specific
-  * Mistral doesn't accept the system prompt
-  * Qwen14B-Chat-Int8: runtime error: probability tensor contains either `inf`, `nan` or element < 0
-* Hardware specific
-  * `Cuda extension not installed` error when loading GPTQ models with 4060Ti GPUs
+This shell script can be used to run from the terminal.
+
+```shell
+cd ~/workspace/mine/Panda-LLM/ || { echo "Failed to change directory"; exit 1; }
+
+# Activate the conda environment named 'panda'
+source ~/miniforge3/etc/profile.d/conda.sh
+conda activate panda
+
+# Check if the conda environment 'panda' is active.
+if [ "$CONDA_DEFAULT_ENV" = "panda" ]; then
+    echo "Successfully activated conda environment 'panda'."
+else
+    echo "Failed to activate conda environment 'panda'."
+    exit 1
+fi
+
+# Run the Python script
+python webui.py
+```
+

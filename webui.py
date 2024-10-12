@@ -1,5 +1,5 @@
 """A simple web interactive chat demo based on gradio."""
-
+import os.path as osp
 from argparse import ArgumentParser
 from typing import Tuple, List
 import gradio as gr
@@ -7,11 +7,10 @@ import torch
 import gc
 
 import utils.text_processing as text_processing
-from utils.model_utils import get_model_type
 from modules.model_factory import ModelFactory
 from modules.auto_model import AutoModel
 import modules.all_models  # Import models to ensure they are registered
-from utils.download_utils import get_model_list
+from utils.download_utils import get_model_list, CUSTOM_WEIGHTS_DIR
 import utils.ui_utils as ui_utils
 from utils.custom_config import CustomConfig
 from modules import shared
@@ -76,11 +75,10 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
     lora_name = lora_path.split('/')[-1] if lora_path else ''
     model_description = model_list_dropdown + (f' (LORA: {lora_name})' if lora_path else "")
 
-    model_path = model_list_dropdown
-    model_type = get_model_type(model_path)
+    model_name_or_path = model_list_dropdown
     meta_info = ''
 
-    model_class = ModelFactory.get_model_class(model_path)
+    model_class = ModelFactory.get_model_class(model_name_or_path)
     if model_class == None:
         model_class = AutoModel
 
@@ -89,15 +87,19 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
               "gpu_layers": n_gpu_layers,
               "n_ctx": n_ctx * 1024}
 
-    shared.model = model_class(model_path, **kwargs)
+    if "custom/" in model_name_or_path.lower(): # This is a custom model instead of a Huggingface model name
+        model_name_or_path = osp.join(CUSTOM_WEIGHTS_DIR, model_name_or_path[len("custom/"):])
+
+    shared.model = model_class(model_name_or_path, **kwargs)
     if shared.model == None:
-        raise NotImplementedError(f'Unsupported model type: {model_type}')
+        raise NotImplementedError(f'Unsupported model type: {model_class}')
 
     # Get the number of parameters in shared.model
     num_params = shared.model.num_params()
     meta_info = shared.model.get_meta_info()
+    meta_info_text = f' ({meta_info})' if meta_info else ''
 
-    return f'Model loaded: {model_description} ' + f' ({meta_info})' + \
+    return f'Model loaded: {model_description} ' + meta_info_text + \
         f' Parameters: {num_params/1024/1024/1024:.1f}B', get_gpu_memory_usage()
 
 
@@ -234,7 +236,7 @@ def main(args):
                                            ctx_length_slider, lora_path, load_in_8bit_checkbox],
                                        [gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
 
-        gr.Markdown(ui_utils.SUPPORTED_MODELS_TEXT)
+        gr.Markdown(ui_utils.supported_models_text(ModelFactory.all_model_descriptions()))
 
         predict_params = [chatbot, model_param_elements['system_prompt'], model_param_elements['top_k'], model_param_elements['top_p'],
                           model_param_elements['temperature'], model_param_elements['enable_postprocessing']]

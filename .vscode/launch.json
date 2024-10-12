@@ -97,18 +97,6 @@
                 "weights/hf/Mixtral-8x7B-Instruct-v0.1-GPTQ"
             ],
             "justMyCode": false
-        },
-        {
-            "name": "API: Run experimental",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "openai_api_experimental.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--checkpoint-path",
-                "weights/hf/qwen1_5-14b-chat-q5_0.gguf"
-            ],
-            "justMyCode": false
         }
     ]
 }

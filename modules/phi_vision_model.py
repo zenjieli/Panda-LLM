@@ -76,3 +76,7 @@ class PhiVisionModel(BaseModel):
 
         chatbot[-1][-1] += output_text
         yield chatbot
+
+    @classmethod
+    def description(cls) -> str:
+        return "Phi Vision"

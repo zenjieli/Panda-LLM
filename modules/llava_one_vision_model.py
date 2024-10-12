@@ -43,7 +43,7 @@ class LlavaOneVisionModel(BaseModel):
             messages, image = self.chatbot_to_messages(chatbot)
 
             prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
-            inputs = self.processor(images=image, text=prompt, return_tensors='pt').to(0, torch.float16)
+            inputs = self.processor(images=[image], text=prompt, return_tensors='pt').to(0, torch.float16)
             output = self.core_model.generate(**inputs, max_new_tokens=200, do_sample=False)
 
             generated_ids = output[0][len(inputs.input_ids[0]):]
@@ -53,3 +53,7 @@ class LlavaOneVisionModel(BaseModel):
 
             chatbot[-1][-1] += output_text
             yield chatbot
+
+    @classmethod
+    def description(cls) -> str:
+        return "LLaVA-OneVision"

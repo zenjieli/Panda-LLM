@@ -1,10 +1,8 @@
 """
 Support QwenVL2Model with transformers library
 """
-import torch
 from PIL import Image
 from modules.base_model import BaseModel
-from transformers import AutoConfig
 from modules.model_factory import ModelFactory
 
 
@@ -15,11 +13,9 @@ class Qwen2VLModel(BaseModel):
 
         super().__init__()
 
-        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
-        dtype = config.torch_dtype if hasattr(config, "torch_dtype") else torch.float16
         self.core_model = Qwen2VLForConditionalGeneration.from_pretrained(
             model_path,
-            torch_dtype=dtype,
+            torch_dtype="auto",
             attn_implementation="flash_attention_2",
             device_map="auto",
         )
@@ -68,3 +64,7 @@ class Qwen2VLModel(BaseModel):
 
             chatbot[-1][-1] += "\n".join(output_text)
             yield chatbot
+
+    @classmethod
+    def description(cls) -> str:
+        return "Qwen2-VL"

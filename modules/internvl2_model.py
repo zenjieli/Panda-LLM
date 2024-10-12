@@ -130,3 +130,7 @@ class InternVL2Model(BaseModel):
 
             chatbot[-1][-1] += response
             yield chatbot
+
+    @classmethod
+    def description(cls) -> str:
+        return "InternVL2"

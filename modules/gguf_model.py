@@ -108,3 +108,7 @@ class GGUFModel(BaseModel):
                     yield chatbot
 
         self.stop_event.clear()
+
+    @classmethod
+    def description(cls) -> str:
+        return "GGUF"

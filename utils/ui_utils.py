@@ -1,7 +1,5 @@
 import os.path as osp
 
-SUPPORTED_MODELS_TEXT = '<center><font size=2><b>Supported models</b>: Mistral, QWen, QWen-VL, Yi, MiniCPM-V </center>'
-
 DOWNLOAD_MODEL_INSTRUCTION = 'Hugging Face username/model path, for instance: facebook/galactica-125m. To specify a branch, add it at the end after a \":\" character like this: facebook/galactica-125m:main.'
 
 def model_text(model_path):
@@ -16,3 +14,6 @@ def model_text(model_path):
         </p>"""
 
     # return f'<center><font size=3>Model: {osp.basename(model_path)}</center>'
+
+def supported_models_text(all_model_descriptions: list[str]) -> str:
+    return f"<center><font size=2><b>Supported models</b>: Huggingface LLMs, GGUF models, {', '.join(all_model_descriptions)}</center>"

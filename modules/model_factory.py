@@ -17,3 +17,12 @@ class ModelFactory:
             if regex.search(model_name):
                 return model_class
         return None
+
+    @classmethod
+    def all_model_descriptions(cls) -> list[str]:
+        # return [model_class.description() for model_class in cls._creators.values()]
+        classes = []
+        for model_class in cls._creators.values():
+            classes.append(model_class.description())
+        return classes
+

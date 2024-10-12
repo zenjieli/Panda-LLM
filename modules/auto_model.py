@@ -75,3 +75,7 @@ class AutoModel(BaseModel):
 
             t.join()
             self.stop_event.clear()
+
+    @classmethod
+    def description(self) -> str:
+        return "Huggingface models"

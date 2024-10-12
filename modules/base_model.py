@@ -79,3 +79,7 @@ class BaseModel:
 
     def get_meta_info(self) -> dict:
         return ""
+
+    @classmethod
+    def description(self) -> str:
+        return ""
