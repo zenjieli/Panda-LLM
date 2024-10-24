@@ -1,7 +1,7 @@
 import os
 import os.path as osp
 from huggingface_hub import hf_hub_download, snapshot_download
-from transformers import TRANSFORMERS_CACHE
+from huggingface_hub.constants import HF_HUB_CACHE
 
 CUSTOM_WEIGHTS_DIR = osp.expanduser("~/weights/manual")
 
@@ -23,11 +23,11 @@ def download_file(hf_model_tag: str, filename: str) -> str:
             if "*" in filename:  # Multiplfile download
                 subdir = filename.replace("*.", "").replace("*", "")
                 result = snapshot_download(repo_id=repo_id, allow_patterns=filename, revision=revision,
-                                           local_dir=osp.join(TRANSFORMERS_CACHE, subdir))
+                                           local_dir=osp.join(HF_HUB_CACHE, subdir))
             else:  # Single file download
-                result = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision, local_dir=TRANSFORMERS_CACHE)
+                result = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision, local_dir=HF_HUB_CACHE)
         else:
-            result = snapshot_download(repo_id=repo_id, cache_dir=TRANSFORMERS_CACHE, revision=revision)
+            result = snapshot_download(repo_id=repo_id, cache_dir=HF_HUB_CACHE, revision=revision)
 
         return f'Downloaded to {osp.join(os.getcwd(), result)}' if osp.exists(result) else result
     except Exception as e:
@@ -36,18 +36,18 @@ def download_file(hf_model_tag: str, filename: str) -> str:
 
 def get_cached_model_ids():
     # List all model directories. A dir is like "models--org--model_name"
-    model_dirs = [d for d in os.listdir(TRANSFORMERS_CACHE) if d.startswith("models--")]
+    model_dirs = [d for d in os.listdir(HF_HUB_CACHE) if d.startswith("models--")]
 
     # Extract model IDs, like "org/model_name"
     model_ids = ["/".join(d.split("--")[1:]) for d in model_dirs]
 
     # List all gguf dirs in TRANSFORMERS_CACHE
-    gguf_dirs = [d for d in os.listdir(TRANSFORMERS_CACHE) if osp.isdir(
-        osp.join(TRANSFORMERS_CACHE, d)) and d.lower().endswith("gguf")]
+    gguf_dirs = [d for d in os.listdir(HF_HUB_CACHE) if osp.isdir(
+        osp.join(HF_HUB_CACHE, d)) and d.lower().endswith("gguf")]
 
     # List all gguf files in TRANSFORMERS_CACHE
-    gguf_files = [d for d in os.listdir(TRANSFORMERS_CACHE) if osp.isfile(
-        osp.join(TRANSFORMERS_CACHE, d)) and d.lower().endswith(".gguf")]
+    gguf_files = [d for d in os.listdir(HF_HUB_CACHE) if osp.isfile(
+        osp.join(HF_HUB_CACHE, d)) and d.lower().endswith(".gguf")]
 
     # List all custom weights (such as the fine-tuned models in house); the model name will look like "custom/my_custom_model"
     custom_weights = ["custom/" + d for d in os.listdir(CUSTOM_WEIGHTS_DIR) if osp.isdir(osp.join(CUSTOM_WEIGHTS_DIR, d))]

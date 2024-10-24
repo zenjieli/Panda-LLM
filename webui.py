@@ -159,7 +159,7 @@ def on_chatbot_change(chatbot):
 
 def main(args):
     with gr.Blocks(title='Panda Chatbot') as demo:
-        gr.Markdown(ui_utils.model_text(''))
+        gr.Markdown(ui_utils.model_icon())
         model_param_elements = {}
 
         with gr.Tab('Main'):
@@ -194,7 +194,7 @@ def main(args):
                 with gr.Column(scale=5):
                     model_list_dropdown = gr.Dropdown(get_model_list(), label='Models', interactive=True)
                     lora_path = gr.Textbox(placeholder="Path to Lora model (For transformers library models)", value='',
-                                           show_label=False, max_lines=1, container=False)
+                                           max_lines=1, container=False)
                     with gr.Row():
                         model_refresh_btn = gr.Button('🔃 Refresh')
                         model_refresh_btn.click(lambda: gr.Dropdown(get_model_list()),
@@ -211,7 +211,7 @@ def main(args):
                             label='Load in 8-bit', info='For transformers library models')
 
                     model_param_elements['system_prompt'] = gr.Textbox(
-                        show_label=False, placeholder='System prompt...', container=False)
+                        placeholder='System prompt...', container=False)
 
                 with gr.Column(scale=5):
                     from utils.download_utils import download_file
@@ -219,7 +219,7 @@ def main(args):
                     hf_model_tag = gr.Textbox(label="Download model", info=ui_utils.DOWNLOAD_MODEL_INSTRUCTION,
                                               show_label=True, container=False)
                     hf_filename = gr.Textbox(placeholder="File name (for GGUF models)",
-                                             show_label=False, max_lines=1, container=False)
+                                             max_lines=1, container=False)
                     download_btn = gr.Button('Download')
                     model_status_label = gr.Markdown()
                     gpu_usage_label = gr.Markdown()
