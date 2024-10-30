@@ -17,7 +17,7 @@ class AutoModel(BaseModel):
         self._tokenizer = AutoTokenizer.from_pretrained(model_path)
 
         # model.dtype will be set to torch.float16 if GPTQ is used
-        self.core_model = AutoModelForCausalLM.from_pretrained(model_path, load_in_8bit=load_in_8bit, device_map='auto')
+        self.core_model = AutoModelForCausalLM.from_pretrained(model_path, load_in_8bit=load_in_8bit, device_map='auto', torch_dtype="auto")
         if lora_path:
             self.core_model = PeftModel.from_pretrained(self.core_model, model_id=lora_path)
         self.core_model.eval()

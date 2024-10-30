@@ -1,12 +1,14 @@
 # Panda Webui
 
 - [Panda Webui](#panda-webui)
+  - [Overview](#overview)
   - [Installation](#installation)
   - [models](#models)
-  - [Fine tuning](#fine-tuning)
   - [Shell script](#shell-script)
 
+## Overview
 
+Panda WebUI is a lightweight and user-friendly web interface designed for running lightweight Language Models (LLMs) using the Hugging Face `transformers` library. In addition to supporting standard LLMs, Panda WebUI also accommodates GGUF models and several popular large Vision-Language Models (VLMs).
 
 ## Installation
 
@@ -17,7 +19,7 @@ conda activate panda
 ```
 * Install pytorch
 ```shell
-pip install torch==2.2.1 torchvision==0.17.1 --index-url https://download.pytorch.org/whl/cu121
+pip install torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cu121
 ```
 * For `llama-cpp` (GGUF inference) and `deepspeed` (training):
 ```shell
@@ -34,21 +36,16 @@ conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime
 
 Set the Huggingface cache by setting the environment variable in `.bashrc`:
 ```
-export TRANSFORMERS_CACHE=/path_to_cache
+export HF_HOME=/path/to/cache
 ```
 
-
-
-## Fine tuning
-
-See [Supervised fine tuning](lora/readme.md).
 
 ## Shell script
 
 This shell script can be used to run from the terminal.
 
 ```shell
-cd ~/workspace/mine/Panda-LLM/ || { echo "Failed to change directory"; exit 1; }
+cd ~/path/to/Panda-LLM/ || { echo "Failed to change directory"; exit 1; }
 
 # Activate the conda environment named 'panda'
 source ~/miniforge3/etc/profile.d/conda.sh
@@ -65,4 +62,3 @@ fi
 # Run the Python script
 python webui.py
 ```
-

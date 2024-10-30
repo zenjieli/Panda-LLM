@@ -1,6 +1,4 @@
 import json
-from collections import defaultdict
-
 
 class CustomConfig:
     def __init__(self, model_name, n_gpu_layers=-1, n_ctx_1024=1, lora_path=None, load_in_8bit=False, **kwargs):
