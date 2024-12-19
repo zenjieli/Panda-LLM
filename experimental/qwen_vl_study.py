@@ -3,7 +3,6 @@ from PIL import Image
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 import os.path as osp
 
-
 def generate_inputs_embeds(model, input_ids, image_grid_thw, pixel_values, image_embeds=None, attention_mask=None):
     inputs_embeds = model.model.embed_tokens(input_ids)
     if pixel_values is not None:
@@ -31,6 +30,13 @@ def main(model_path: str, img_path: str):
     # Load the model in half-precision on the available device(s)
     model = Qwen2VLForConditionalGeneration.from_pretrained(model_path, torch_dtype="auto", device_map="auto")
     processor = AutoProcessor.from_pretrained(model_path)
+
+    # Count the number of parameters
+    accum = 0
+    for name, p in model.state_dict().items():
+        accum += p.numel()
+        print(f"{name}: {list(p.shape)} {p.numel()}\tAccumulated: {accum}")
+
 
     # Image
     image = Image.open(img_path)
