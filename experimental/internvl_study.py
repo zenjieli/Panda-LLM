@@ -91,6 +91,12 @@ model_id = 'OpenGVLab/InternVL2_5-2B'
 model = AutoModel.from_pretrained(model_id, torch_dtype="auto", device_map="auto", trust_remote_code=True)
 tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True, use_fast=False)
 
+# Count the number of parameters
+accum = 0
+for name, p in model.state_dict().items():
+    accum += p.numel()
+    print(f"{name}: {list(p.shape)} {p.numel()}\tAccumulated: {accum}")
+
 # set the max number of tiles in `max_num`
 pixel_values = load_image(osp.expanduser("~/Pictures/broker.png"), max_num=12).to(torch.bfloat16).cuda()
 generation_config = dict(max_new_tokens=1, do_sample=False)
