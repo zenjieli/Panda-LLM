@@ -165,6 +165,8 @@ def main(args):
         with gr.Tab('Main'):
             chatbot = gr.Chatbot()
             chatbot.change(on_chatbot_change, chatbot)
+            chatbot.latex_delimiters = [{'left': '\\(', 'right': '\\)', 'display': False},
+                                        {'left': '\\[', 'right': '\\]', 'display': True}]
 
             with gr.Row():
                 with gr.Column(scale=4):
