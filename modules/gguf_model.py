@@ -13,12 +13,12 @@ class GGUFModel(BaseModel):
 
     def __init__(self, dir_or_filename, gpu_layers, n_ctx, **kwargs) -> None:
         from llama_cpp_cuda_tensorcores import Llama
-        from transformers import TRANSFORMERS_CACHE
+        from huggingface_hub.constants import HF_HUB_CACHE
 
         super().__init__()
 
         # If model_path is a directory, find the first gguf file in the directory
-        model_path = osp.join(TRANSFORMERS_CACHE, dir_or_filename)
+        model_path = osp.join(HF_HUB_CACHE, dir_or_filename)
         if osp.isdir(model_path):
             # List all GGUF files in the directory
             files = [f for f in os.listdir(model_path) if os.path.isfile(
@@ -108,6 +108,17 @@ class GGUFModel(BaseModel):
                     yield chatbot
 
         self.stop_event.clear()
+
+    def predict_simple_nostream(self, query: str, system: str, gen_kwargs: dict) -> str:
+        """Simply predict without streaming. Useful for OpenAI API server.
+        """
+        messages = [{"role": "system", "content": system}] if system else []
+        messages.append({"role": "user", "content": query})
+
+        # remove key stopping_criteria from gen_kwargs
+        gen_kwargs = {k: v for k, v in gen_kwargs.items() if k != "stopping_criteria"}
+        output = self.core_model.create_chat_completion(messages=messages, stream=False, **gen_kwargs)
+        return output["choices"][0]["message"].get("content")
 
     @classmethod
     def description(cls) -> str:

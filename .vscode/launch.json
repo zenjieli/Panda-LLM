@@ -43,14 +43,15 @@
             "justMyCode": false
         },
         {
-            "name": "API: Run server Mixtral",
+            "name": "API: Run server",
             "type": "debugpy",
             "request": "launch",
-            "program": "openai_api.py",
+            "program": "openai_api/openai_api_server.py",
             "console": "integratedTerminal",
             "args": [
-                "--checkpoint-path",
-                "weights/hf/Mixtral-8x7B-Instruct-v0.1-GPTQ"
+                "--model_name_or_path",
+                // "~/weights/hf/hub/qwen2.5-0.5b-instruct-q8_0.gguf"
+                "Qwen/Qwen2.5-1.5B-Instruct"
             ],
             "justMyCode": false
         }
