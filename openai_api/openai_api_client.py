@@ -23,7 +23,7 @@ def predict_streaming():
 
 def predict_nostream():
     messages = prepare_messages()
-    response = client.chat.completions.create(model='Unknown', messages=messages, stream=False)
+    response = client.chat.completions.create(model='Unknown', messages=messages, stream=False, temperature=0)
 
     return (response.choices[0].message.content) if len(response.choices) > 0 else ''
 

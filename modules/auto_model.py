@@ -59,8 +59,7 @@ class AutoModel(BaseModel):
             generate_kwargs = {
                 "input_ids": model_inputs,
                 "streamer": streamer,
-                # do_sample=True only makes sense if top_k > 1
-                "do_sample": True if model_params.get("top_k", 40) > 1 else False,
+                "do_sample": True if model_params.get("temperature", 0.8) > 0 else False,
                 "stopping_criteria": StoppingCriteriaList([stop]),
                 "max_length": self._model_max_length,
                 **model_params
@@ -87,7 +86,9 @@ class AutoModel(BaseModel):
         model_inputs = self._tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
 
         stop = self.StopOnTokens()
-        gen_kwargs = {**gen_kwargs, "input_ids": model_inputs,
+        gen_kwargs = {**gen_kwargs,
+                      "input_ids": model_inputs,
+                      "do_sample": True if gen_kwargs.get("temperature", 0.8) > 0 else False,
                       "stopping_criteria": StoppingCriteriaList([stop]),
                       "max_length": self._model_max_length, }
 

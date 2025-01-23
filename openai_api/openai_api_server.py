@@ -108,18 +108,10 @@ async def create_chat_completion(request: ChatCompletionRequest):
     gen_kwargs = {}
     if request.top_k is not None:
         gen_kwargs["top_k"] = request.top_k
-    if request.temperature:
-        if request.temperature < 0.01:
-            gen_kwargs["top_k"] = 1  # greedy decoding
-        else:
-            # Not recommended. Please tune top_p instead.
-            gen_kwargs["temperature"] = request.temperature
-
+    if request.temperature is not None:
+        gen_kwargs["temperature"] = request.temperature
     if request.top_p:
         gen_kwargs["top_p"] = request.top_p
-
-    if request.top_k or request.temperature or request.top_p:
-        gen_kwargs["do_sample"] = True
 
     query, system = parse_messages(request.messages)
 
