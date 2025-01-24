@@ -5,3 +5,4 @@ from modules.minicpm_v_model import MiniCPMModel
 from modules.phi_vision_model import PhiVisionModel
 from modules.llava_one_vision_model import LlavaOneVisionModel
 from modules.internvl2_model import InternVL2Model
+from modules.video_llama import VideoLLaMA
