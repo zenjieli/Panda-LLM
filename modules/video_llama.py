@@ -1,4 +1,5 @@
 from threading import Thread
+from typing import Generator
 import torch
 from transformers import AutoModelForCausalLM
 from transformers import AutoProcessor, TextIteratorStreamer, AutoConfig
@@ -18,7 +19,7 @@ class VideoLLaMA(BaseModel):
         self.dtype = config.torch_dtype if hasattr(config, "torch_dtype") else torch.float16
         self.core_model = AutoModelForCausalLM.from_pretrained(
             model_path,
-            device_map="auto",
+            device_map="cuda:0",  # Only support one GPU
             trust_remote_code=True,
             torch_dtype=self.dtype,
             load_in_8bit=load_in_8bit,
@@ -38,12 +39,18 @@ class VideoLLaMA(BaseModel):
             if isinstance(user_msg, (tuple, list)):  # query is image path
                 content.append({"type": "image", "image": {"image_path": user_msg[0]}})
             else:  # query is text
-                content.append({"type": "text", "text": user_msg})
-                messages.append({"role": "user", "content": content})
+                if user_msg:
+                    content.append({"type": "text", "text": user_msg})
+                    messages.append({"role": "user", "content": content})
+                    content = []
+                if model_msg:
+                    messages.append({"role": "assistent", "content": model_msg})
 
         return messages
 
-    def predict(self, chatbot, params):
+    def predict(self, chatbot: list[list[str | tuple]], params: dict) -> Generator[tuple[list[list[str | tuple]], str], None, None]:
+        from time import time
+
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot
         else:
@@ -59,19 +66,16 @@ class VideoLLaMA(BaseModel):
 
         inputs["streamer"] = streamer
         inputs["max_new_tokens"] = 512
-        t = Thread(target=self.core_model.generate, kwargs=inputs)
-        t.start()
-
-        for new_token in streamer:
-            if self.stop_event.is_set():
-                break
-
+        token_count = 0
+        t0 = time()
+        for new_token in self.generate_stream(streamer, inputs):
+            token_count += 1
             if new_token != "":
                 chatbot[-1][-1] += new_token
-                yield chatbot
+                yield chatbot, ""
 
-        t.join()
-        self.stop_event.clear()
+        summary = f"New tokens: {token_count}; Speed: {token_count / (time() - t0):.1f} tokens/sec"
+        yield chatbot, summary
 
     @classmethod
     def description(cls) -> str:

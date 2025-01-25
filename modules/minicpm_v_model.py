@@ -13,7 +13,7 @@ from modules.model_factory import ModelFactory
 
 @ModelFactory.register("minicpm")
 class MiniCPMModel(BaseModel):
-    _chat_completion_params = ["temperature", "top_p", "top_k", "repetition_penalty"]
+    _chat_completion_params = ["temperature", "repetition_penalty"]
 
     def __init__(self, model_path, load_in_8bit=False, **kwargs) -> None:
         super().__init__()

@@ -41,7 +41,7 @@ def remove_last_reply(history):
 def remove_last_message(history):
     """Remove the last user and assistant messages from the history
     """
-    if len(history) > 0:
+    if len(history) > 1:
         history.pop()
 
     return history

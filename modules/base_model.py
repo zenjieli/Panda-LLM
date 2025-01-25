@@ -1,5 +1,7 @@
-from threading import Event
+from threading import Event, Thread
+from typing import Generator
 import torch
+from transformers import TextIteratorStreamer
 import utils.text_processing as text_processing
 
 
@@ -76,6 +78,19 @@ class BaseModel:
             return sum(p.numel() for p in self.core_model.parameters())
         else:  # Not supported
             return 0
+
+    def generate_stream(self, streamer: TextIteratorStreamer, inputs: dict)->Generator[str, None, None]:
+        t = Thread(target=self.core_model.generate, kwargs=inputs)
+        t.start()
+
+        for new_token in streamer:
+            if self.stop_event.is_set():
+                break
+
+            yield new_token
+
+        t.join()
+        self.stop_event.clear()
 
     def get_meta_info(self) -> dict:
         return ""

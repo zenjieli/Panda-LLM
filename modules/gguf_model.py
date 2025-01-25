@@ -34,7 +34,7 @@ class GGUFModel(BaseModel):
         if model_path is None or not osp.exists(model_path):
             raise FileNotFoundError(f".gguf file not found in {model_path}.")
 
-        self.core_model = Llama(model_path=model_path, n_gpu_layers=gpu_layers, n_ctx=n_ctx)
+        self.core_model = Llama(model_path=model_path, n_gpu_layers=gpu_layers, n_ctx=n_ctx, verbose=False)
         self._chat_formatter = self._find_chat_formatter()
         self._ctx_size = n_ctx
 
@@ -84,29 +84,36 @@ class GGUFModel(BaseModel):
 
         return tokenizer.encode(self._chat_formatter(messages=messages).prompt)
 
-    def predict(self, chatbot, params):
-        if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
-            yield chatbot
-        else:
+    def predict(self, chatbot: list[list[str | tuple]], params: dict):
+        from time import time
+
+        summary = ""
+        if len(chatbot) > 0 and chatbot[-1][0] and not chatbot[-1][1]:  # Empty user input or non-empty reply
             model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(
                 params, self._chat_completion_params)
 
             messages = BaseModel.chatbot_to_messages(chatbot, system_prompt=system_prompt)
             output = self.core_model.create_chat_completion(messages=messages, stream=True, **model_params)
 
+            token_count = 0
+            t0 = time()
             postprocessor = CJKPostprocessing(enable_postprocessing)
             for item in output:
                 if self.stop_event.is_set():
                     break
 
                 new_token = item['choices'][0]['delta'].get('content')
+                token_count += 1
                 if new_token in self._stop_words:
                     break
 
                 if new_token:
                     chatbot[-1][-1] += postprocessor.run(new_token)
-                    yield chatbot
+                    yield chatbot, ""
 
+            summary = f"New tokens: {token_count}; Speed: {token_count / (time() - t0):.1f} tokens/sec"
+
+        yield chatbot, summary
         self.stop_event.clear()
 
     def predict_simple_nostream(self, query: str, system: str, gen_kwargs: dict) -> str:

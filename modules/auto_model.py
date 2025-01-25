@@ -9,7 +9,7 @@ from modules.base_model import BaseModel
 class AutoModel(BaseModel):
     """For unquantized models, GPTQ and AWQ using transformers
     """
-    _chat_completion_params = ["temperature", "top_p", "top_k", "repetition_penalty"]
+    _chat_completion_params = ["temperature", "repetition_penalty"]
 
     def __init__(self, model_path, lora_path=None, load_in_8bit=False, **kwargs):
         super().__init__()
