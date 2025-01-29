@@ -1,21 +1,30 @@
 """
 Support QwenVL2Model with transformers library
 """
-from threading import Thread
 from PIL import Image
 from modules.base_model import BaseModel
 from modules.model_factory import ModelFactory
-from transformers import TextIteratorStreamer
+from transformers import TextIteratorStreamer, AutoProcessor, AutoModel
+from transformers.utils import check_min_version
 
 
-@ModelFactory.register("qwen2-vl")
+@ModelFactory.register("qwen2(\.5)?-vl")
 class Qwen2VLModel(BaseModel):
     def __init__(self, model_path, **kwargs) -> None:
-        from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
-
         super().__init__()
 
-        self.core_model = Qwen2VLForConditionalGeneration.from_pretrained(
+        import re
+        version_2_5 = re.search("qwen2\.5-vl", model_path, re.IGNORECASE)
+
+        if version_2_5:
+            check_min_version("4.49.0.dev0")
+            from transformers import Qwen2_5_VLForConditionalGeneration
+            model_class = Qwen2_5_VLForConditionalGeneration
+        else:
+            from transformers import Qwen2VLForConditionalGeneration
+            model_class = Qwen2VLForConditionalGeneration
+
+        self.core_model = model_class.from_pretrained(
             model_path,
             torch_dtype="auto",
             attn_implementation="flash_attention_2",
