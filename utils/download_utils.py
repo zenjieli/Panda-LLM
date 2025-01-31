@@ -6,8 +6,8 @@ from huggingface_hub.constants import HF_HUB_CACHE
 CUSTOM_WEIGHTS_DIR = osp.expanduser("~/weights/manual")
 
 
-def download_file(hf_model_tag: str, filename: str) -> str:
-    """Download a file or files from Huggingface Hub.
+def download_file(hf_model_tag: str, filename: str, token: str) -> str:
+    """Download a file or files from Huggingface Hub. See also https://huggingface.co/docs/huggingface_hub/en/guides/download
     Args:
         hf_model_tag: For example, "repo_id:revision"
         filename (optional): The filename for the file pattern of the file(s) to download, such as my_file.gguf or my_file*.gguf
@@ -19,15 +19,17 @@ def download_file(hf_model_tag: str, filename: str) -> str:
     repo_id, revision = hf_model_tag.split(':') if ':' in hf_model_tag else (substrings[0], None)
 
     try:
+        token = token if token else None
+
         if filename:
             if "*" in filename:  # Multiplfile download
                 subdir = filename.replace("*.", "").replace("*", "")
                 result = snapshot_download(repo_id=repo_id, allow_patterns=filename, revision=revision,
-                                           local_dir=osp.join(HF_HUB_CACHE, subdir))
+                                           local_dir=osp.join(HF_HUB_CACHE, subdir), token=token)
             else:  # Single file download
-                result = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision, local_dir=HF_HUB_CACHE)
+                result = hf_hub_download(repo_id=repo_id, filename=filename, revision=revision, local_dir=HF_HUB_CACHE, token=token)
         else:
-            result = snapshot_download(repo_id=repo_id, cache_dir=HF_HUB_CACHE, revision=revision)
+            result = snapshot_download(repo_id=repo_id, cache_dir=HF_HUB_CACHE, revision=revision, token=token)
 
         # Make the downloaded files accessible to all users
         change_model_permissions(result, model_id=repo_id, mode=0o777)
