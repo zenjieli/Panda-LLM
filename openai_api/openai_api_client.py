@@ -1,6 +1,6 @@
 from openai import OpenAI
 
-client = OpenAI(base_url='http://localhost:8000/v1', api_key='none')
+client = OpenAI(base_url='http://0.0.0.0:8000/v1', api_key='none')
 
 
 def prepare_messages():
