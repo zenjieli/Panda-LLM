@@ -2,7 +2,7 @@ import os
 import os.path as osp
 from typing import List
 from modules.base_model import BaseModel
-from utils.cjk_postprocessing import CJKPostprocessing
+from utils.postprocessing import PostprocessingGroup, ReasoningPostprocessing, CJKPostprocessing
 from modules.model_factory import ModelFactory
 
 
@@ -34,7 +34,7 @@ class GGUFModel(BaseModel):
         if model_path is None or not osp.exists(model_path):
             raise FileNotFoundError(f".gguf file not found in {model_path}.")
 
-        self.core_model = Llama(model_path=model_path, n_gpu_layers=gpu_layers, n_ctx=n_ctx, verbose=False)
+        self.core_model = Llama(model_path=model_path, n_gpu_layers=gpu_layers, n_ctx=n_ctx, verbose=True)
         self._chat_formatter = self._find_chat_formatter()
         self._ctx_size = n_ctx
 
@@ -97,7 +97,7 @@ class GGUFModel(BaseModel):
 
             token_count = 0
             t0 = time()
-            postprocessor = CJKPostprocessing(enable_postprocessing)
+            postprocessors = PostprocessingGroup(CJKPostprocessing(enable_postprocessing), ReasoningPostprocessing())
             for item in output:
                 if self.stop_event.is_set():
                     break
@@ -108,7 +108,7 @@ class GGUFModel(BaseModel):
                     break
 
                 if new_token:
-                    chatbot[-1][-1] += postprocessor.run(new_token)
+                    chatbot[-1][-1] += postprocessors(new_token)
                     yield chatbot, ""
 
             summary = f"New tokens: {token_count}; Speed: {token_count / (time() - t0):.1f} tokens/sec"

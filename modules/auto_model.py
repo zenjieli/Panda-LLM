@@ -4,12 +4,13 @@ from threading import Thread
 import torch
 from peft import PeftModel
 from modules.base_model import BaseModel
+from utils.postprocessing import CJKPostprocessing, ReasoningPostprocessing, PostprocessingGroup
 
 
 class AutoModel(BaseModel):
     """For unquantized models, GPTQ and AWQ using transformers
     """
-    _chat_completion_params = ["temperature", "repetition_penalty"]
+    _chat_completion_params = ["temperature"]
 
     def __init__(self, model_path, lora_path=None, load_in_8bit=False, **kwargs):
         super().__init__()
@@ -48,9 +49,9 @@ class AutoModel(BaseModel):
 
     def predict(self, chatbot, params):
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
-            yield chatbot
+            yield chatbot, ""
         else:
-            model_params, system_prompt, _ = BaseModel.gather_params(params, self._chat_completion_params)
+            model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(params, self._chat_completion_params)
             stop = self.StopOnTokens()
             model_inputs = self._tokenize(chatbot, system_prompt).to(self.device)
             streamer = TextIteratorStreamer(
@@ -67,13 +68,14 @@ class AutoModel(BaseModel):
             t = Thread(target=self.core_model.generate, kwargs=generate_kwargs)
             t.start()
 
+            postprocessors = PostprocessingGroup(CJKPostprocessing(enable_postprocessing), ReasoningPostprocessing())
             for new_token in streamer:
                 if self.stop_event.is_set():
                     break
 
                 if new_token != "":
-                    chatbot[-1][-1] += new_token
-                    yield chatbot
+                    chatbot[-1][-1] += postprocessors(new_token)
+                    yield chatbot, ""
 
             t.join()
             self.stop_event.clear()

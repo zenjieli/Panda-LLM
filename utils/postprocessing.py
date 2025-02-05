@@ -1,4 +1,33 @@
-class CJKPostprocessing:
+class Postprocessing:
+    def run(self, text: str):
+        return text
+
+
+class PostprocessingGroup:
+    def __init__(self, *args: Postprocessing) -> None:
+        self._processors = []
+        for arg in args:
+            if isinstance(arg, Postprocessing):
+                self._processors.append(arg)
+
+    def __call__(self, text: str):
+        for processor in self._processors:
+            text = processor.run(text)
+
+        return text
+
+
+class ReasoningPostprocessing(Postprocessing):
+    def run(self, text: str):
+        if text.startswith("<think>"):
+            return "--------------------------------------------------*Reasoning starts*:\n "
+        elif text.startswith("</think>"):
+            return "--------------------------------------------------*Reasoning ends*.\n\n"
+        else:
+            return text
+
+
+class CJKPostprocessing(Postprocessing):
     def __init__(self, enabled) -> None:
         # Define translation dictionary for English to Chinese punctuations
         self.TRANSLATION_TEXT = {
