@@ -6,3 +6,5 @@ from modules.phi_vision_model import PhiVisionModel
 from modules.llava_one_vision_model import LlavaOneVisionModel
 from modules.internvl2_model import InternVL2Model
 from modules.video_llama import VideoLLaMA
+from modules.janus_model import JanusModel
+from modules.internvideo_model import InternVideoModel

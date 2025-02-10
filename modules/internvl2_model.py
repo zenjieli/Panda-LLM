@@ -16,8 +16,7 @@ class InternVL2Model(BaseModel):
     def __init__(self, model_path, **kwargs) -> None:
 
         super().__init__()
-
-        # If you want to load a model using multiple GPUs, please refer to the `Multiple GPUs` section.
+    
         self.core_model = AutoModel.from_pretrained(
             model_path,
             torch_dtype=torch.bfloat16,

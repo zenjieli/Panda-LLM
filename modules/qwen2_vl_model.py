@@ -44,7 +44,7 @@ class Qwen2VLModel(BaseModel):
         messages = []
         content = []
         for user_msg, model_msg in chatbot:
-            if isinstance(user_msg, (tuple, list)):  # query is image path
+            if isinstance(user_msg, (tuple, list)):  # query is media path
                 if BaseModel.is_video_file(user_msg[0]):
                     content.append({"type": "video", "video": user_msg[0]})
                 elif BaseModel.is_image_file(user_msg[0]):

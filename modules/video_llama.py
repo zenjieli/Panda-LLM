@@ -1,4 +1,3 @@
-from threading import Thread
 from typing import Generator
 import torch
 from transformers import AutoModelForCausalLM
@@ -7,7 +6,7 @@ from modules.base_model import BaseModel
 from modules.model_factory import ModelFactory
 
 
-@ModelFactory.register("videollama3-.*-image")
+@ModelFactory.register("videollama3-.*")
 class VideoLLaMA(BaseModel):
     """Support VideoLLaMA3 with transformers library
     """
@@ -16,6 +15,7 @@ class VideoLLaMA(BaseModel):
         super().__init__()
 
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        self.is_image_only = model_path.lower().endswith("image")
         self.dtype = config.torch_dtype if hasattr(config, "torch_dtype") else torch.float16
         self.core_model = AutoModelForCausalLM.from_pretrained(
             model_path,
@@ -31,13 +31,21 @@ class VideoLLaMA(BaseModel):
 
     def support_image(self):
         return True
+    
+    def support_video(self):
+        return not self.is_image_only
 
     def chatbot_to_messages(self, chatbot) -> list[str]:
         messages = []
         content = []
         for _, (user_msg, model_msg) in enumerate(chatbot):
             if isinstance(user_msg, (tuple, list)):  # query is image path
-                content.append({"type": "image", "image": {"image_path": user_msg[0]}})
+                if BaseModel.is_video_file(user_msg[0]):
+                    content.append({"type": "video", "video": {"video_path":user_msg[0]}})
+                elif BaseModel.is_image_file(user_msg[0]):
+                    content.append({"type": "image", "image": user_msg[0]})
+                else:
+                    raise ValueError(f"Unsupported file type: {user_msg[0]}")                
             else:  # query is text
                 if user_msg:
                     content.append({"type": "text", "text": user_msg})
