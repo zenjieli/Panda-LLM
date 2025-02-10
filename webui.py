@@ -9,6 +9,7 @@ import gc
 import utils.text_processing as text_processing
 from modules.model_factory import ModelFactory
 from modules.auto_model import AutoModel
+from modules.base_model import BaseModel
 import modules.all_models  # Import models to ensure they are registered
 from utils.download_utils import get_model_list, CUSTOM_WEIGHTS_DIR
 import utils.ui_utils as ui_utils
@@ -34,14 +35,17 @@ def collect_gabbage():
         torch.cuda.empty_cache()
 
 
-def add_file(history, task_history, file):
-    if shared.model.support_image():
-        history = history + [((file.name,), None)]
-        task_history = task_history + [((file.name,), None)]
-        return history, task_history
+def add_media_file(history, file):
+    if shared.model is None:
+        gr.Info("Model not loaded.")
     else:
-        gr.Info("Image not supported.")
-        return history, task_history
+        if (BaseModel.is_video_file(file.name) and shared.model.support_video()) or \
+                (BaseModel.is_image_file(file.name) and shared.model.support_image()):
+            history.append(((file.name,), None))  # File name in tuple as a hack to indicate an image/video instead of user text input
+        else:
+            gr.Info("Images/videos not supported for the current model.")
+
+    return history
 
 
 def on_model_selection_change(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit):
@@ -155,8 +159,6 @@ def main(args):
             with gr.Row():
                 with gr.Column(scale=4):
                     user_input = gr.Textbox(placeholder="Input...", container=False)
-                    task_history = gr.State([])
-                    model_param_elements["task_history"] = task_history
                     with gr.Row():
                         submit_btn = gr.Button("🚀 Submit")
                         regen_btn = gr.Button("🔁 Regenerate")
@@ -167,9 +169,8 @@ def main(args):
                         model_param_elements["enable_postprocessing"] = gr.Checkbox(True, label="Postprocess output")
                 with gr.Column(scale=1):
                     empty_btn = gr.Button("🗑️ Clear History")
-                    addfile_btn = gr.UploadButton("🖼️ Image...", file_types=["image"])
-                    addfile_btn.upload(add_file, [chatbot, task_history, addfile_btn],
-                                       [chatbot, task_history], show_progress=True)
+                    addfile_btn = gr.UploadButton("🖼️ Media...", file_types=["image", "video"])
+                    addfile_btn.upload(add_media_file, [chatbot, addfile_btn], chatbot, show_progress=True)
 
                     model_param_elements["temperature"] = gr.Slider(0.01, 1, value=0.2, step=0.01, label="Temperature")
 

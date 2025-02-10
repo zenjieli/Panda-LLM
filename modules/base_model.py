@@ -29,6 +29,9 @@ class BaseModel:
     def support_image(self):
         return False
 
+    def support_video(self):
+        return False
+
     def append_user_input(self, query: str, chatbot: list[list]) -> tuple[str, list[list]]:
         if chatbot is None:
             chatbot = []
@@ -98,3 +101,14 @@ class BaseModel:
     @classmethod
     def description(self) -> str:
         return ""
+
+    @staticmethod
+    def is_image_file(filename: str)->bool:
+        ext = "." in filename and filename.split(".")[-1].lower()
+        return ext in ["jpg", "jpeg", "png", "gif"]
+
+    @staticmethod
+    def is_video_file(filename: str)->bool:
+        ext = "." in filename and filename.split(".")[-1].lower()
+        return ext == "mp4"
+
