@@ -30,13 +30,25 @@ If training is not needed, one can install the CUDA Runtime instead:
 conda install -y -c "nvidia/label/cuda-12.1.1" cuda-runtime
 ```
 * Install the packages in requirements.txt
-* Create a symbolic link `weights` to the model directory
+  * If unable to install auto-gptq try installing it separately:
+  ```shell
+  pip install auto-gptq --no-build-isolation
+  ```
+  * If unable to install flash-attention try installing it using the system terminal
+* Create a symbolic link `weights` to the model directory:
+```shell
+ln -s /path_to_weights .
+```
 
-## models
+## Models
 
-Set the Huggingface cache by setting the environment variable in `.bashrc`:
+To use models from Huggingface, set the Huggingface cache by setting the environment variable in `.bashrc`:
 ```
 export HF_HOME=/path/to/cache
+```
+Then run the command to reload and apply the changes made to `.bashrc`:
+```shell
+source ~/.bashrc
 ```
 
 
@@ -57,8 +69,12 @@ if [ "$CONDA_DEFAULT_ENV" = "panda" ]; then
 else
     echo "Failed to activate conda environment 'panda'."
     exit 1
-fi
 
 # Run the Python script
 python webui.py
-```
+``` 
+## Getting started with Panda Web
+
+In Models, use the Download feature to download models from Huggingface. 
+To use the downloaded model, refresh and load the model on the left side of the Models page. Once the model is loaded, you can start chatting with the model in Main. 
+
