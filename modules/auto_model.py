@@ -8,7 +8,7 @@ from utils.postprocessing import CJKPostprocessing, ReasoningPostprocessing, Pos
 
 
 class AutoModel(BaseModel):
-    """For unquantized models, GPTQ and AWQ using transformers
+    """For unquantized models using transformers
     """
     _chat_completion_params = ["temperature"]
 

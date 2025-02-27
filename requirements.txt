@@ -8,8 +8,6 @@ torchvision>=0.19.1
 transformers>=4.45.2
 
 # For GPTQ and AWQ
-auto-gptq --no-build-isolation # See https://github.com/AutoGPTQ/AutoGPTQ
-autoawq
 accelerate>=1.0.0
 optimum>=1.23.1
 
