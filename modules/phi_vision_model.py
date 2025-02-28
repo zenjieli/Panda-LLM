@@ -2,6 +2,8 @@ from PIL import Image
 import torch
 from transformers import AutoModelForCausalLM
 from transformers import AutoProcessor, AutoConfig
+from transformers import __version__ as transformers_version
+from packaging import version
 from modules.base_model import BaseModel
 from modules.model_factory import ModelFactory
 
@@ -11,6 +13,9 @@ class PhiVisionModel(BaseModel):
     """
 
     def __init__(self, model_path, **kwargs) -> None:
+        if version.parse(transformers_version) > version.parse("4.48.0"):
+            raise Exception("PhiVisionModel requires transformers <= 4.48.0.")
+
         super().__init__()
 
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
@@ -74,7 +79,7 @@ class PhiVisionModel(BaseModel):
                                                clean_up_tokenization_spaces=False)[0]
 
         chatbot[-1][-1] += output_text
-        yield chatbot
+        yield chatbot, ""
 
     @classmethod
     def description(cls) -> str:

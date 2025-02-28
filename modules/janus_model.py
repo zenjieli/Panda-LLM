@@ -1,11 +1,19 @@
 """
-Support QwenVL2Model with transformers library
+Support Janus with transformers library
 """
 from modules.base_model import BaseModel
 from modules.model_factory import ModelFactory
 from transformers import AutoModelForCausalLM, AutoProcessor
-from janus.models import MultiModalityCausalLM, VLChatProcessor
-from janus.utils.io import load_pil_images
+from transformers import __version__ as transformers_version
+from packaging import version
+if version.parse(transformers_version) >= version.parse("4.49.0"):
+    try:
+        from janus.models import MultiModalityCausalLM, VLChatProcessor
+        from janus.utils.io import load_pil_images
+    except ImportError as e:
+        print("Failed to import janus:", e)
+else:
+    print("Warning: Janus requires transformers >= 4.49.0.")
 import torch
 
 
@@ -78,7 +86,7 @@ class JanusModel(BaseModel):
                 do_sample=False,
                 use_cache=True)
 
-            chatbot[-1][-1] = self.tokenizer.decode(outputs[0].cpu().tolist(), skip_special_tokens=True)                                    
+            chatbot[-1][-1] = self.tokenizer.decode(outputs[0].cpu().tolist(), skip_special_tokens=True)
             token_count = len(outputs[0])
             summary = f"New tokens: {token_count}; Speed: {token_count / (time() - t0):.1f} tokens/sec"
             yield chatbot, summary

@@ -128,7 +128,7 @@ class InternVL2Model(BaseModel):
             response = self.core_model.chat(self.tokenizer, pixel_values, question, self.generation_config)
 
             chatbot[-1][-1] += response
-            yield chatbot
+            yield chatbot, ""
 
     @classmethod
     def description(cls) -> str:
