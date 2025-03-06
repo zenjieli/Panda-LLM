@@ -8,9 +8,10 @@ from modules.model_factory import ModelFactory
 
 @ModelFactory.register("videollama3-.*")
 class VideoLLaMA(BaseModel):
-    """Support VideoLLaMA3 with transformers library
     """
-
+    Support VideoLLaMA3 with transformers library        
+    Tested with transformers==4.49.0
+    """
     def __init__(self, model_path, load_in_8bit=False, **kwargs) -> None:
         super().__init__()
 
@@ -31,7 +32,7 @@ class VideoLLaMA(BaseModel):
 
     def support_image(self):
         return True
-    
+
     def support_video(self):
         return not self.is_image_only
 
@@ -41,11 +42,11 @@ class VideoLLaMA(BaseModel):
         for _, (user_msg, model_msg) in enumerate(chatbot):
             if isinstance(user_msg, (tuple, list)):  # query is image path
                 if BaseModel.is_video_file(user_msg[0]):
-                    content.append({"type": "video", "video": {"video_path":user_msg[0]}})
+                    content.append({"type": "video", "video": {"video_path": user_msg[0]}})
                 elif BaseModel.is_image_file(user_msg[0]):
-                    content.append({"type": "image", "image": user_msg[0]})
+                    content.append({"type": "image", "image": {"image_path": user_msg[0]}})
                 else:
-                    raise ValueError(f"Unsupported file type: {user_msg[0]}")                
+                    raise ValueError(f"Unsupported file type: {user_msg[0]}")
             else:  # query is text
                 if user_msg:
                     content.append({"type": "text", "text": user_msg})

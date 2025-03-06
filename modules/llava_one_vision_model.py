@@ -1,19 +1,26 @@
-"""
-Support LlavaOneVisionModel with transformers library
-"""
 import torch
 from PIL import Image
 from modules.base_model import BaseModel
 from modules.model_factory import ModelFactory
 
-@ModelFactory.register("llava-onevision-qwen2")
+# Model ID must include "llava-onevision" or "llava-1.5" and end with "-hf"
+@ModelFactory.register("llava-(onevision|1\.5).*?-hf$")
 class LlavaOneVisionModel(BaseModel):
+    """
+    Support LlavaOneVisionModel with transformers library
+    Tested with transformers==4.49.0
+    """
     def __init__(self, model_path, **kwargs) -> None:
-        from transformers import LlavaOnevisionForConditionalGeneration, AutoProcessor
+        from transformers import AutoProcessor        
+        if "1.5" in model_path:
+            from transformers import LlavaForConditionalGeneration
+            model_class = LlavaForConditionalGeneration
+        else:
+            from transformers import LlavaOnevisionForConditionalGeneration, AutoProcessor
+            model_class = LlavaOnevisionForConditionalGeneration
 
         super().__init__()
-
-        self.core_model = LlavaOnevisionForConditionalGeneration.from_pretrained(
+        self.core_model = model_class.from_pretrained(
             model_path,
             torch_dtype=torch.float16,
             low_cpu_mem_usage=True).to(0)

@@ -1,6 +1,3 @@
-"""
-Support QwenVL2Model with transformers library
-"""
 from modules.base_model import BaseModel
 from modules.model_factory import ModelFactory
 from transformers import TextIteratorStreamer, AutoProcessor, AutoModel
@@ -10,6 +7,10 @@ from qwen_vl_utils import process_vision_info
 
 @ModelFactory.register("qwen2(\.5)?-vl")
 class Qwen2VLModel(BaseModel):
+    """
+    Support QwenVL2Model with transformers library
+    Tested with transformers==4.49.0    
+    """    
     def __init__(self, model_path, **kwargs) -> None:
         super().__init__()
 
