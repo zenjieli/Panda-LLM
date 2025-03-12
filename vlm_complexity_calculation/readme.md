@@ -1,4 +1,5 @@
-# Tested
+# Supported models for FLOP estimation
+## Tested
 * Qwen/Qwen2.5-VL-3B-Instruct
 * Qwen/Qwen2.5-VL-7B-Instruct
 * Qwen/Qwen2-VL-2B-Instruct
@@ -42,7 +43,7 @@
 * google/gemma-3-4b-it
 * ibm-granite/granite-vision-3.2-2b
 
-# Theoretically supported
+## Theoretically supported
 * Qwen/Qwen2.5-VL-72B-Instruct
 * Qwen/Qwen2-VL-72B-Instruct
 * OpenGVLab/InternVL2-26B
