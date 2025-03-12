@@ -61,7 +61,7 @@ def on_model_selection_change(model_list_dropdown, n_gpu_layers, n_ctx_1024, lor
     return n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit
 
 
-def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit) -> Tuple[str, str]:
+def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit, estimate_flops) -> Tuple[str, str]:
     """
     Parameters:
         model_list_dropdown: model name
@@ -84,7 +84,10 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
     model_name_or_path = model_list_dropdown
     meta_info = ""
 
-    flops = get_num_flops(model_name_or_path)
+    if estimate_flops:
+        flops = get_num_flops(model_name_or_path)
+    else:
+        flops = ""
 
     model_class = ModelFactory.get_model_class(model_name_or_path)
     if model_class == None:
@@ -197,6 +200,8 @@ def main(args):
                     with gr.Row():
                         load_in_8bit_checkbox = gr.Checkbox(
                             label="Load in 8-bit", info="For transformers library models")
+                        flops_checkbox = gr.Checkbox(
+                            label="FLOP estimation", info="FLOP estimation based on 1920x1020 image, 128 input tokens, and 1 output token")
 
                     model_param_elements["system_prompt"] = gr.Textbox(
                         placeholder="System prompt...", container=False)
@@ -211,12 +216,14 @@ def main(args):
                     download_btn = gr.Button("Download")
                     model_status_label = gr.Markdown()
                     gpu_usage_label = gr.Markdown()
-                    flops_usage_label = gr.Markdown()
+
+                    if flops_checkbox:
+                        flops_usage_label = gr.Markdown()
 
             download_btn.click(download_file, inputs=[hf_model_tag, hf_filename], outputs=[model_status_label])
             model_load_btn.click(load_model,
                                  inputs=[model_list_dropdown, gpu_layers_slider,
-                                         ctx_length_slider, lora_path, load_in_8bit_checkbox],
+                                         ctx_length_slider, lora_path, load_in_8bit_checkbox, flops_checkbox],
                                  outputs=[model_status_label, gpu_usage_label, flops_usage_label])
             model_save_btn.click(save_custom_config,
                                  inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
@@ -226,7 +233,6 @@ def main(args):
                                        [gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
 
         gr.Markdown(ui_utils.supported_models_text(ModelFactory.all_model_descriptions()))
-        gr.Markdown("<center><font size=2>FLOPs calculation based on high-definition image, 128 input tokens and 1 output token.</center>")
 
         predict_params = [chatbot, model_param_elements["system_prompt"],
                           model_param_elements["temperature"], model_param_elements["enable_postprocessing"]]

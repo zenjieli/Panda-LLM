@@ -1,5 +1,5 @@
 from typing import List
-from transformers import AutoModelForCausalLM, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
+from transformers import AutoModelForCausalLM, AutoModelForImageTextToText, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
 from threading import Thread
 import torch
 from peft import PeftModel
@@ -19,8 +19,13 @@ class AutoModel(BaseModel):
         self._tokenizer = AutoTokenizer.from_pretrained(model_path)
 
         # model.dtype will be set to torch.float16 if GPTQ is used
-        self.core_model = AutoModelForCausalLM.from_pretrained(
-            model_path, load_in_8bit=load_in_8bit, device_map="auto", torch_dtype="auto")
+        try:
+            self.core_model = AutoModelForCausalLM.from_pretrained(
+                model_path, load_in_8bit=load_in_8bit, device_map="auto", torch_dtype="auto", trust_remote_code=True)
+        except:
+            self.core_model = AutoModelForImageTextToText.from_pretrained(
+                model_path, load_in_8bit=load_in_8bit, device_map="auto", torch_dtype="auto", trust_remote_code=True)
+
         if lora_path:
             self.core_model = PeftModel.from_pretrained(self.core_model, model_id=lora_path)
         self.core_model.eval()
