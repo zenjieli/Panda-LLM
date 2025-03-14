@@ -4,17 +4,20 @@ from modules.base_model import BaseModel
 from modules.model_factory import ModelFactory
 
 # Model ID must include "llava-onevision" or "llava-1.5" and end with "-hf"
-@ModelFactory.register("llava-(onevision|1\.5).*?-hf$")
-class LlavaOneVisionModel(BaseModel):
+@ModelFactory.register("llava-(onevision|1\.5|next).*?-hf$")
+class LlavaModel(BaseModel):
     """
-    Support LlavaOneVisionModel with transformers library
+    Support LLaVA-OneVision, LLaVA-1.5 and LLaVA-Next with transformers library
     Tested with transformers==4.49.0
     """
     def __init__(self, model_path, **kwargs) -> None:
-        from transformers import AutoProcessor        
+        from transformers import AutoProcessor
         if "1.5" in model_path:
             from transformers import LlavaForConditionalGeneration
             model_class = LlavaForConditionalGeneration
+        elif "next" in model_path:
+            from transformers import LlavaNextForConditionalGeneration
+            model_class = LlavaNextForConditionalGeneration
         else:
             from transformers import LlavaOnevisionForConditionalGeneration, AutoProcessor
             model_class = LlavaOnevisionForConditionalGeneration
@@ -68,4 +71,4 @@ class LlavaOneVisionModel(BaseModel):
 
     @classmethod
     def description(cls) -> str:
-        return "LLaVA-OneVision"
+        return "LLaVA-1.5/Next/OneVision"
