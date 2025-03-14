@@ -78,3 +78,6 @@ python webui.py
 In Models, use the Download feature to download models from Huggingface. 
 To use the downloaded model, refresh and load the model on the left side of the Models page. Once the model is loaded, you can start chatting with the model in Main. 
 
+## FLOP estimation
+Inference-time FLOP estimation is computed using a single high-definition image (resolution 1920x1080), 128 padding input tokens and 1 output token. The list of available models for this feature can be found [here](./vlm_complexity_calculation/readme.md)
+
