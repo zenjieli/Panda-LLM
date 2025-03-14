@@ -18,9 +18,9 @@ class MiniCPMModel(BaseModel):
     def __init__(self, model_path, load_in_8bit=False, **kwargs) -> None:
         super().__init__()
 
-        if "V-2_5" in model_path or "V-2_6" in model_path:
+        if "V-2_5" in model_path or "2_6" in model_path:
             self.is_legacy = False
-        elif "V-2" in model_path:
+        elif "V-2" in model_path or model_path == 'openbmb/MiniCPM-V':
             self.is_legacy = True
         else:
             raise Exception(f"Unsupported version: {model_path}")
