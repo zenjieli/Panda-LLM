@@ -10,7 +10,7 @@
 * openbmb/MiniCPM-V-2_6
 * openbmb/MiniCPM-o-2_6
 * microsoft/Phi-3.5-vision-instruct
-* microsoft/Phi-3.5-vision-instruct
+* microsoft/Phi-3-vision-128k-instruct
 * microsoft/Phi-4-multimodal-instruct
 * OpenGVLab/InternVL2-1B
 * OpenGVLab/InternVL2-2B
