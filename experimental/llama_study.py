@@ -10,9 +10,10 @@ if tokenizer.pad_token is None:
 model = AutoModelForCausalLM.from_pretrained(model_id, device_map='auto', torch_dtype="auto")
 model.eval()
 
-# Count the number of parameters
+# Count the number of trainable parameters
+print("\n\nCount the number of trainable parameters:")
 accum = 0
-for name, p in model.state_dict().items():
+for name, p in model.named_parameters():
     accum += p.numel()
     print(f"{name}: {list(p.shape)} {p.numel()}\tAccumulated: {accum}")
 
