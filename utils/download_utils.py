@@ -6,7 +6,7 @@ from huggingface_hub.constants import HF_HUB_CACHE
 CUSTOM_WEIGHTS_DIR = osp.expanduser("~/weights/manual")
 
 
-def download_file(hf_model_tag: str, filename: str, token: str) -> str:
+def download_file(hf_model_tag: str, filename: str, token: str=None) -> str:
     """Download a file or files from Huggingface Hub. See also https://huggingface.co/docs/huggingface_hub/en/guides/download
     Args:
         hf_model_tag: For example, "repo_id:revision"

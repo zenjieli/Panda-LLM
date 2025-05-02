@@ -6,14 +6,6 @@ from modules.model_factory import ModelFactory
 from transformers import AutoModelForCausalLM, AutoProcessor
 from transformers import __version__ as transformers_version
 from packaging import version
-if version.parse(transformers_version) >= version.parse("4.49.0"):
-    try:
-        from janus.models import MultiModalityCausalLM, VLChatProcessor
-        from janus.utils.io import load_pil_images
-    except ImportError as e:
-        print("Failed to import janus:", e)
-else:
-    print("Warning: Janus requires transformers >= 4.49.0.")
 import torch
 
 
@@ -21,6 +13,16 @@ import torch
 class JanusModel(BaseModel):
     def __init__(self, model_path, **kwargs) -> None:
         super().__init__()
+
+        if version.parse(transformers_version) >= version.parse("4.49.0"):
+            try:
+                from janus.models import MultiModalityCausalLM, VLChatProcessor
+                from janus.utils.io import load_pil_images
+            except ImportError as e:
+                print("Failed to import janus:")
+                raise
+        else:
+            raise RuntimeError("Error: Janus requires transformers >= 4.49.0.")
 
         self.vl_chat_processor: VLChatProcessor = VLChatProcessor.from_pretrained(model_path)
         self.tokenizer = self.vl_chat_processor.tokenizer

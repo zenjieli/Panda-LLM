@@ -1,10 +1,11 @@
 from typing import List
-from transformers import AutoModelForCausalLM, AutoModelForImageTextToText, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
+from transformers import AutoModelForCausalLM, AutoModelForImageTextToText, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, \
+    TextIteratorStreamer, AutoConfig
 from threading import Thread
 import torch
 from peft import PeftModel
 from modules.base_model import BaseModel
-from utils.postprocessing import CJKPostprocessing, ReasoningPostprocessing, PostprocessingGroup
+from utils.postprocessing import CJKPostprocessing, PostprocessingGroup, MathPostprocessing
 
 
 class AutoModel(BaseModel):
@@ -17,11 +18,20 @@ class AutoModel(BaseModel):
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self._tokenizer = AutoTokenizer.from_pretrained(model_path)
-
+        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        dtype = config.torch_dtype if hasattr(config, "torch_dtype") else "auto"
+        
         # model.dtype will be set to torch.float16 if GPTQ is used
         try:
             self.core_model = AutoModelForCausalLM.from_pretrained(
-                model_path, load_in_8bit=load_in_8bit, device_map="auto", torch_dtype="auto", trust_remote_code=True)
+                model_path,
+                load_in_8bit=load_in_8bit,
+                device_map="auto",
+                torch_dtype=dtype,
+                attn_implementation="flash_attention_2"
+                        if self.supports_flash_attention and dtype in [torch.bfloat16, torch.float16]
+                        else "sdpa",
+                trust_remote_code=True,)
         except:
             self.core_model = AutoModelForImageTextToText.from_pretrained(
                 model_path, load_in_8bit=load_in_8bit, device_map="auto", torch_dtype="auto", trust_remote_code=True)
@@ -56,7 +66,8 @@ class AutoModel(BaseModel):
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot, ""
         else:
-            model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(params, self._chat_completion_params)
+            model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(
+                params, self._chat_completion_params)
             stop = self.StopOnTokens()
             model_inputs = self._tokenize(chatbot, system_prompt).to(self.device)
             streamer = TextIteratorStreamer(
@@ -73,7 +84,7 @@ class AutoModel(BaseModel):
             t = Thread(target=self.core_model.generate, kwargs=generate_kwargs)
             t.start()
 
-            postprocessors = PostprocessingGroup(CJKPostprocessing(enable_postprocessing), ReasoningPostprocessing())
+            postprocessors = PostprocessingGroup(CJKPostprocessing(enable_postprocessing), MathPostprocessing())
             for new_token in streamer:
                 if self.stop_event.is_set():
                     break
@@ -90,7 +101,8 @@ class AutoModel(BaseModel):
         """
         messages = [{"role": "system", "content": system}] if system else []
         messages.append({"role": "user", "content": query})
-        model_inputs = self._tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
+        model_inputs = self._tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
 
         stop = self.StopOnTokens()
         gen_kwargs = {**gen_kwargs,

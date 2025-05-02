@@ -2,7 +2,7 @@ import os
 import os.path as osp
 from typing import List
 from modules.base_model import BaseModel
-from utils.postprocessing import PostprocessingGroup, ReasoningPostprocessing, CJKPostprocessing
+from utils.postprocessing import PostprocessingGroup, CJKPostprocessing
 from modules.model_factory import ModelFactory
 
 
@@ -97,7 +97,7 @@ class GGUFModel(BaseModel):
 
             token_count = 0
             t0 = time()
-            postprocessors = PostprocessingGroup(CJKPostprocessing(enable_postprocessing), ReasoningPostprocessing())
+            postprocessors = PostprocessingGroup(CJKPostprocessing(enable_postprocessing))
             for item in output:
                 if self.stop_event.is_set():
                     break

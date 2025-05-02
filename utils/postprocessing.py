@@ -27,6 +27,28 @@ class ReasoningPostprocessing(Postprocessing):
             return text
 
 
+class MathPostprocessing(Postprocessing):
+    def __init__(self) -> None:
+        self._in_eq = False
+        self._in_inline_eq = False
+
+    def run(self, text: str):
+        if text.strip() == "$$":  # Block equation sign
+            self._in_eq = not self._in_eq
+            text = '\\[' if self._in_eq else '\\]'
+            return text
+        elif not self._in_eq and "$$" not in text:  # Not inside a block equation
+            if text.strip().startswith("$") or text.strip().endswith("$"):  # Inline equation sign
+                self._in_inline_eq = not self._in_inline_eq
+                text = text.replace("$", "\\(") if self._in_inline_eq else text.replace("$", "\\)")
+                return text
+
+        if "\n" in text:
+            self._in_inline_eq = False
+
+        return text
+
+
 class CJKPostprocessing(Postprocessing):
     def __init__(self, enabled) -> None:
         # Define translation dictionary for English to Chinese punctuations

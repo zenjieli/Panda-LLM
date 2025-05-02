@@ -41,31 +41,30 @@ def add_media_file(history, file):
     else:
         if (BaseModel.is_video_file(file.name) and shared.model.support_video()) or \
                 (BaseModel.is_image_file(file.name) and shared.model.support_image()):
-            history.append(((file.name,), None))  # File name in tuple as a hack to indicate an image/video instead of user text input
+            # File name in tuple as a hack to indicate an image/video instead of user text input
+            history.append(((file.name,), None))
         else:
             gr.Info("Images/videos not supported for the current model.")
 
     return history
 
 
-def on_model_selection_change(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit):
+def on_model_selection_change(model_list_dropdown, n_ctx_1024, lora_path, load_in_8bit):
     model_name = model_list_dropdown
 
     config = shared.custom_configs.try_get(model_name)
     if config is not None:
-        n_gpu_layers = config.n_gpu_layers
         n_ctx_1024 = config.n_ctx_1024
         lora_path = config.lora_path
         load_in_8bit = config.load_in_8bit
 
-    return n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit
+    return n_ctx_1024, lora_path, load_in_8bit
 
 
-def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit, estimate_flops) -> Tuple[str, str]:
+def load_model(model_list_dropdown, n_ctx, lora_path, load_in_8bit, estimate_flops) -> Tuple[str, str]:
     """
     Parameters:
-        model_list_dropdown: model name
-        n_gpu_layers: number of layers to offload to GPU. Only supported by llama-cpp for now
+        model_list_dropdown: model name        
         n_ctx: context window size (unit: 1024 tokens). Only supported by llama-cpp for now
     """
     from utils.gpu_utils import get_gpu_memory_usage
@@ -95,7 +94,6 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
 
     kwargs = {"lora_path": lora_path,
               "load_in_8bit": load_in_8bit,
-              "gpu_layers": n_gpu_layers,
               "n_ctx": n_ctx * 1024}
 
     if "custom/" in model_name_or_path.lower():  # This is a custom model instead of a Huggingface model name
@@ -114,10 +112,10 @@ def load_model(model_list_dropdown, n_gpu_layers, n_ctx, lora_path, load_in_8bit
         f" Trainable parameters: {num_params/1024/1024/1024:.1f}B", get_gpu_memory_usage(), flops
 
 
-def save_custom_config(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit):
+def save_custom_config(model_list_dropdown, n_ctx_1024, lora_path, load_in_8bit):
     """Save custom model config. See also `load_model`
     """
-    shared.custom_configs.add(CustomConfig(model_list_dropdown, n_gpu_layers, n_ctx_1024, lora_path, load_in_8bit))
+    shared.custom_configs.add(CustomConfig(model_list_dropdown, n_ctx_1024, lora_path, load_in_8bit))
     shared.custom_configs.save_to_json()
 
 
@@ -131,7 +129,7 @@ def append_user_input(query, chatbot, system_prompt) -> Tuple[str, List, str]:
 
 def predict(chatbot, system_prompt, temperature, enable_postprocessing):
     if shared.model:
-        params = {"enable_postprcessing": enable_postprocessing}
+        params = {"enable_postprocessing": enable_postprocessing}
         if system_prompt:
             params["system_prompt"] = system_prompt
         if temperature > 0:
@@ -159,7 +157,7 @@ def main(args):
         with gr.Tab("Main"):
             chatbot = gr.Chatbot()
             chatbot.change(on_chatbot_change, chatbot)
-            chatbot.latex_delimiters = [{"left": "\\(", "right": "\\)", "display": False},
+            chatbot.latex_delimiters = [{"left": "\\(", "right": "\\)", "display": True},
                                         {"left": "\\[", "right": "\\]", "display": True}]
 
             with gr.Row():
@@ -192,9 +190,7 @@ def main(args):
                                                 inputs=[], outputs=model_list_dropdown)
                         model_load_btn = gr.Button("🚚 Load")
                     model_save_btn = gr.Button("🗄 Save User Config")
-                    with gr.Row():
-                        gpu_layers_slider = gr.Slider(label="GPU layers to offload to GPU", info="For GGUF", value=-1,
-                                                      minimum=-1, maximum=200, step=1, interactive=True)
+                    with gr.Row():                        
                         ctx_length_slider = gr.Slider(label="Context window length (K)", info="For GGUF", value=1,
                                                       minimum=1, maximum=32, step=1, interactive=True)
                     with gr.Row():
@@ -209,8 +205,8 @@ def main(args):
                 with gr.Column(scale=5):
                     from utils.download_utils import download_file
                     # See https://huggingface.co/docs/huggingface_hub/en/guides/download
-                    hf_model_tag = gr.Textbox(label="Download model", info=ui_utils.DOWNLOAD_MODEL_INSTRUCTION,
-                                              show_label=True, container=False)
+                    hf_model_tag = gr.Textbox(label="Download model",
+                                              info=ui_utils.DOWNLOAD_MODEL_INSTRUCTION, container=False)
                     hf_filename = gr.Textbox(placeholder="File name (for GGUF models)",
                                              max_lines=1, container=False)
                     download_btn = gr.Button("Download")
@@ -222,15 +218,15 @@ def main(args):
 
             download_btn.click(download_file, inputs=[hf_model_tag, hf_filename], outputs=[model_status_label])
             model_load_btn.click(load_model,
-                                 inputs=[model_list_dropdown, gpu_layers_slider,
+                                 inputs=[model_list_dropdown,
                                          ctx_length_slider, lora_path, load_in_8bit_checkbox, flops_checkbox],
                                  outputs=[model_status_label, gpu_usage_label, flops_usage_label])
             model_save_btn.click(save_custom_config,
-                                 inputs=[model_list_dropdown, gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
+                                 inputs=[model_list_dropdown, ctx_length_slider, lora_path, load_in_8bit_checkbox])
             model_list_dropdown.change(on_model_selection_change,
-                                       [model_list_dropdown, gpu_layers_slider,
+                                       [model_list_dropdown,
                                            ctx_length_slider, lora_path, load_in_8bit_checkbox],
-                                       [gpu_layers_slider, ctx_length_slider, lora_path, load_in_8bit_checkbox])
+                                       [ctx_length_slider, lora_path, load_in_8bit_checkbox])
 
         gr.Markdown(ui_utils.supported_models_text(ModelFactory.all_model_descriptions()))
 
