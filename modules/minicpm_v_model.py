@@ -77,7 +77,7 @@ class MiniCPMModel(BaseModel):
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot
         else:
-            model_params, system_prompt, _ = BaseModel.gather_params(params, self._chat_completion_params)
+            model_params, system_prompt, _, _ = BaseModel.gather_params(params, self._chat_completion_params)
             messages, image = self.chatbot_to_messages(chatbot, system_prompt)
 
             if self.is_legacy:

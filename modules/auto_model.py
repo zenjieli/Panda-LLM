@@ -20,7 +20,7 @@ class AutoModel(BaseModel):
         self._tokenizer = AutoTokenizer.from_pretrained(model_path)
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         dtype = config.torch_dtype if hasattr(config, "torch_dtype") else "auto"
-        
+
         # model.dtype will be set to torch.float16 if GPTQ is used
         try:
             self.core_model = AutoModelForCausalLM.from_pretrained(
@@ -29,8 +29,8 @@ class AutoModel(BaseModel):
                 device_map="auto",
                 torch_dtype=dtype,
                 attn_implementation="flash_attention_2"
-                        if self.supports_flash_attention and dtype in [torch.bfloat16, torch.float16]
-                        else "sdpa",
+                if self.supports_flash_attention and dtype in [torch.bfloat16, torch.float16]
+                else "sdpa",
                 trust_remote_code=True,)
         except:
             self.core_model = AutoModelForImageTextToText.from_pretrained(
@@ -62,12 +62,28 @@ class AutoModel(BaseModel):
     def try_tokenize(self, chatbot, system_prompt) -> List:
         return self._tokenize(chatbot, system_prompt).squeeze().tolist()
 
+    @staticmethod
+    def try_set_rope_scaling(model, rope_yarn=False):
+        if not rope_yarn:
+            return
+
+        if hasattr(model.config, "rope_scaling"):
+            model.config.rope_scaling = {
+                "rope_type": "yarn",
+                "factor": 4.0,
+                "original_max_position_embeddings": 32768
+            }
+        else:
+            print("This model does not support RoPE scaling.")
+
     def predict(self, chatbot, params):
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot, ""
         else:
-            model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(
+            model_params, system_prompt, enable_postprocessing, rope_yarn = BaseModel.gather_params(
                 params, self._chat_completion_params)
+            
+            self.try_set_rope_scaling(self.core_model, rope_yarn)
             stop = self.StopOnTokens()
             model_inputs = self._tokenize(chatbot, system_prompt).to(self.device)
             streamer = TextIteratorStreamer(

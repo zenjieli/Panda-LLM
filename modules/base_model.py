@@ -74,7 +74,8 @@ class BaseModel:
         model_params = {params_name: user_param_elements[params_name]
                         for params_name in expected_params if params_name in user_param_elements}
         enable_postprocessing = user_param_elements.get('enable_postprocessing', False)
-        return model_params, user_param_elements.get('system_prompt'), enable_postprocessing
+        rope_yarn = user_param_elements.get('rope_yarn', False)
+        return model_params, user_param_elements.get('system_prompt'), enable_postprocessing, rope_yarn
 
     def num_params(self) -> int:
         if hasattr(self.core_model, "parameters"):

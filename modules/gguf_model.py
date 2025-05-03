@@ -89,7 +89,7 @@ class GGUFModel(BaseModel):
 
         summary = ""
         if len(chatbot) > 0 and chatbot[-1][0] and not chatbot[-1][1]:  # Empty user input or non-empty reply
-            model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(
+            model_params, system_prompt, enable_postprocessing, _ = BaseModel.gather_params(
                 params, self._chat_completion_params)
 
             messages = BaseModel.chatbot_to_messages(chatbot, system_prompt=system_prompt)

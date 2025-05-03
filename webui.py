@@ -64,7 +64,7 @@ def on_model_selection_change(model_list_dropdown, n_ctx_1024, lora_path, load_i
 def load_model(model_list_dropdown, n_ctx, lora_path, load_in_8bit, estimate_flops) -> Tuple[str, str]:
     """
     Parameters:
-        model_list_dropdown: model name        
+        model_list_dropdown: model name
         n_ctx: context window size (unit: 1024 tokens). Only supported by llama-cpp for now
     """
     from utils.gpu_utils import get_gpu_memory_usage
@@ -127,9 +127,10 @@ def append_user_input(query, chatbot, system_prompt) -> Tuple[str, List, str]:
         return query, chatbot, ""
 
 
-def predict(chatbot, system_prompt, temperature, enable_postprocessing):
+def predict(chatbot, system_prompt, temperature, enable_postprocessing, rope_yarn):
     if shared.model:
         params = {"enable_postprocessing": enable_postprocessing}
+        params = {"rope_yarn": rope_yarn}
         if system_prompt:
             params["system_prompt"] = system_prompt
         if temperature > 0:
@@ -170,6 +171,7 @@ def main(args):
                         stop_btn = gr.Button("🛑 Stop")
                     with gr.Row():
                         prediction_status_label = gr.Markdown()
+                        model_param_elements["rope_yarn"] = gr.Checkbox(False, label="Use YaRN for long context", info="For transformers auto models")
                         model_param_elements["enable_postprocessing"] = gr.Checkbox(True, label="Postprocess output")
                 with gr.Column(scale=1):
                     empty_btn = gr.Button("🗑️ Clear History")
@@ -190,7 +192,7 @@ def main(args):
                                                 inputs=[], outputs=model_list_dropdown)
                         model_load_btn = gr.Button("🚚 Load")
                     model_save_btn = gr.Button("🗄 Save User Config")
-                    with gr.Row():                        
+                    with gr.Row():
                         ctx_length_slider = gr.Slider(label="Context window length (K)", info="For GGUF", value=1,
                                                       minimum=1, maximum=32, step=1, interactive=True)
                     with gr.Row():
@@ -231,7 +233,9 @@ def main(args):
         gr.Markdown(ui_utils.supported_models_text(ModelFactory.all_model_descriptions()))
 
         predict_params = [chatbot, model_param_elements["system_prompt"],
-                          model_param_elements["temperature"], model_param_elements["enable_postprocessing"]]
+                          model_param_elements["temperature"], 
+                          model_param_elements["enable_postprocessing"],
+                          model_param_elements["rope_yarn"]]
         submit_btn.click(append_user_input, [user_input, chatbot, model_param_elements["system_prompt"]],
                          [user_input, chatbot, prediction_status_label]).then(predict, predict_params, [chatbot, prediction_status_label])
 
