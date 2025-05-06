@@ -9,3 +9,4 @@ from modules.internvl2_model import InternVL2Model
 from modules.video_llama import VideoLLaMA
 from modules.janus_model import JanusModel
 from modules.internvideo_model import InternVideoModel
+from modules.pta_model import PTAModel
