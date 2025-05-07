@@ -1,5 +1,5 @@
 from typing import List
-from transformers import AutoModelForCausalLM, AutoModelForImageTextToText, AutoTokenizer, StoppingCriteria, StoppingCriteriaList, \
+from transformers import AutoModelForCausalLM, AutoModelForImageTextToText, AutoTokenizer, \
     TextIteratorStreamer, AutoConfig
 from threading import Thread
 import torch
@@ -57,18 +57,6 @@ class AutoModel(BaseModel):
         # If model_max_length is set in tokenizer, use it; otherwise, use 4*1024
         self._model_max_length = self._tokenizer.model_max_length if self._tokenizer.model_max_length < 400 * 1024 else 4 * 1024
 
-    class StopOnTokens(StoppingCriteria):
-        def __call__(
-            self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
-        ) -> bool:
-            stop_ids = (
-                [2, 6, 7, 8],
-            )  # "<|endoftext|>", "<|im_start|>", "<|im_end|>", "<|im_sep|>"
-            for stop_id in stop_ids:
-                if input_ids[0][-1] == stop_id:
-                    return True
-            return False
-
     def _tokenize(self, chatbot, system_prompt) -> torch.Tensor:
         messages = BaseModel.chatbot_to_messages(chatbot, system_prompt)
         return self._tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
@@ -83,7 +71,6 @@ class AutoModel(BaseModel):
             model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(
                 params, self._chat_completion_params)
 
-            stop = self.StopOnTokens()
             model_inputs = self._tokenize(chatbot, system_prompt).to(self.device)
             streamer = TextIteratorStreamer(
                 self._tokenizer, timeout=60, skip_prompt=True, skip_special_tokens=True
@@ -92,7 +79,6 @@ class AutoModel(BaseModel):
                 "input_ids": model_inputs,
                 "streamer": streamer,
                 "do_sample": True if model_params.get("temperature", 0.8) > 0 else False,
-                "stopping_criteria": StoppingCriteriaList([stop]),
                 "max_length": self._model_max_length,
                 **model_params
             }
@@ -119,11 +105,9 @@ class AutoModel(BaseModel):
         model_inputs = self._tokenizer.apply_chat_template(
             messages, add_generation_prompt=True, return_tensors="pt").to("cuda")
 
-        stop = self.StopOnTokens()
         gen_kwargs = {**gen_kwargs,
                       "input_ids": model_inputs,
                       "do_sample": True if gen_kwargs.get("temperature", 0.8) > 0 else False,
-                      "stopping_criteria": StoppingCriteriaList([stop]),
                       "max_length": self._model_max_length, }
 
         outputs = self.core_model.generate(**gen_kwargs)

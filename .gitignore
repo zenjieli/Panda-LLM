@@ -163,3 +163,6 @@ weights
 #.idea/
 
 user_configs.json
+
+# Temporary server files
+files/*.png

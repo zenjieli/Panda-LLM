@@ -1,6 +1,7 @@
 """
 LLM as a server with OpenAI API
 """
+import os
 import os.path as osp
 import sys
 from argparse import ArgumentParser
@@ -9,10 +10,12 @@ from typing import Dict
 
 import torch
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
+from uuid import uuid4
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from transformers import StoppingCriteria, StoppingCriteriaList
+from transformers import StoppingCriteria
 
 
 from openai_types import (
@@ -28,8 +31,8 @@ sys.path.append(osp.join(osp.dirname(osp.abspath(__file__)), "../"))
 
 # Ensure models are registered
 from modules.auto_model import AutoModel
-from modules.gguf_model import GGUFModel
 from modules.model_factory import ModelFactory
+from modules import all_models
 
 
 def _gc(forced: bool = False):
@@ -93,12 +96,17 @@ def trim_stop_words(response, stop_words):
 def parse_messages(messages):
     system = messages[0].content.strip() if messages[0].role == "system" else ""
 
+    query = None
+    system = None
+    image_filename = None
     if messages[-1].role == "user":
         query = messages[-1].content
+        extra_info = messages[-1].function_call
+        image_filename = extra_info.get("image", None) if extra_info.get("type") == "image" else None
     else:
         raise HTTPException(status_code=400, detail="Invalid request: query missing")
 
-    return query, system
+    return query, system, image_filename
 
 
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
@@ -113,12 +121,45 @@ async def create_chat_completion(request: ChatCompletionRequest):
     if request.top_p:
         gen_kwargs["top_p"] = request.top_p
 
-    query, system = parse_messages(request.messages)
+    query, system, image_filename = parse_messages(request.messages)
+
+    if image_filename:
+        gen_kwargs["image_url"] = "files/" + image_filename
 
     if request.stream:
         print("Streaming is not supported. Fall back to non-streaming mode.")
 
     return predict_nostream(query, system, request.model, gen_kwargs)
+
+def cleanup_file(file_path: str):
+    try:
+        os.remove(file_path)
+    except Exception as e:
+        print(f"Failed to delete file {file_path}: {str(e)}")
+
+@app.post("/v1/files")
+async def upload_file(file: UploadFile = File(...), purpose: str = "assistants"):
+    file_id = str(uuid4()) # Generate a unique filename from UUID
+    file_ext = osp.splitext(file.filename)[-1]
+
+    # Save the file to the server
+    filename = f"{file_id}{file_ext}"
+    file_location = os.path.join(UPLOAD_DIR, filename)
+    try:
+        with open(file_location, "wb") as buffer:
+            buffer.write(await file.read())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+
+    # Return metadata about the uploaded file
+    return JSONResponse(
+        content={
+            "id": file_id,
+            "filename": filename,
+            "purpose": purpose
+        },
+        status_code=201,
+    )
 
 
 def _dump_json(data: BaseModel, *args, **kwargs) -> str:
@@ -157,7 +198,7 @@ def _get_args():
     )
     parser.add_argument("--server-port",
                         type=int,
-                        default=8000,
+                        default=8112,
                         help="Demo server port.")
     parser.add_argument(
         "--server-name",
@@ -181,6 +222,9 @@ if __name__ == "__main__":
     model_class = ModelFactory.get_model_class(args.model_name_or_path)
     if model_class == None:
         model_class = AutoModel
+
+    UPLOAD_DIR = "files" # For uploaded files
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
 
     kwargs = {"gpu_layers": -1, "n_ctx": 4 * 1024}
     model = model_class(args.model_name_or_path, **kwargs)

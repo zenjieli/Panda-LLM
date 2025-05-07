@@ -51,8 +51,16 @@
             "args": [
                 "--model_name_or_path",
                 // "~/weights/hf/hub/qwen2.5-0.5b-instruct-q8_0.gguf"
-                "Qwen/Qwen2.5-1.5B-Instruct"
+                "AskUI/PTA-1"
             ],
+            "justMyCode": false
+        },
+        {
+            "name": "API: Run client",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "openai_api/openai_api_client.py",
+            "console": "integratedTerminal",            
             "justMyCode": false
         }
     ]
