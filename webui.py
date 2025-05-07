@@ -61,7 +61,7 @@ def on_model_selection_change(model_list_dropdown, n_ctx_1024, lora_path, load_i
     return n_ctx_1024, lora_path, load_in_8bit
 
 
-def load_model(model_list_dropdown, n_ctx, lora_path, load_in_8bit, estimate_flops) -> Tuple[str, str]:
+def load_model(model_list_dropdown, rope_yarn: bool, n_ctx, lora_path, load_in_8bit, estimate_flops) -> Tuple[str, str]:
     """
     Parameters:
         model_list_dropdown: model name
@@ -94,6 +94,7 @@ def load_model(model_list_dropdown, n_ctx, lora_path, load_in_8bit, estimate_flo
 
     kwargs = {"lora_path": lora_path,
               "load_in_8bit": load_in_8bit,
+              "rope_yarn": rope_yarn,
               "n_ctx": n_ctx * 1024}
 
     if "custom/" in model_name_or_path.lower():  # This is a custom model instead of a Huggingface model name
@@ -127,10 +128,9 @@ def append_user_input(query, chatbot, system_prompt) -> Tuple[str, List, str]:
         return query, chatbot, ""
 
 
-def predict(chatbot, system_prompt, temperature, enable_postprocessing, rope_yarn):
+def predict(chatbot, system_prompt, temperature, enable_postprocessing):
     if shared.model:
-        params = {"enable_postprocessing": enable_postprocessing}
-        params = {"rope_yarn": rope_yarn}
+        params = {"enable_postprocessing": enable_postprocessing}        
         if system_prompt:
             params["system_prompt"] = system_prompt
         if temperature > 0:
@@ -170,8 +170,7 @@ def main(args):
                         pop_last_message_btn = gr.Button("🧹 Remove latest")
                         stop_btn = gr.Button("🛑 Stop")
                     with gr.Row():
-                        prediction_status_label = gr.Markdown()
-                        model_param_elements["rope_yarn"] = gr.Checkbox(False, label="Use YaRN for long context", info="For transformers auto models")
+                        prediction_status_label = gr.Markdown()                        
                         model_param_elements["enable_postprocessing"] = gr.Checkbox(True, label="Postprocess output")
                 with gr.Column(scale=1):
                     empty_btn = gr.Button("🗑️ Clear History")
@@ -193,6 +192,7 @@ def main(args):
                         model_load_btn = gr.Button("🚚 Load")
                     model_save_btn = gr.Button("🗄 Save User Config")
                     with gr.Row():
+                        rope_yarn_checkbox = gr.Checkbox(False, label="Use YaRN for long context", info="For transformers auto models")
                         ctx_length_slider = gr.Slider(label="Context window length (K)", info="For GGUF", value=1,
                                                       minimum=1, maximum=32, step=1, interactive=True)
                     with gr.Row():
@@ -221,7 +221,7 @@ def main(args):
             download_btn.click(download_file, inputs=[hf_model_tag, hf_filename], outputs=[model_status_label])
             model_load_btn.click(load_model,
                                  inputs=[model_list_dropdown,
-                                         ctx_length_slider, lora_path, load_in_8bit_checkbox, flops_checkbox],
+                                         rope_yarn_checkbox, ctx_length_slider, lora_path, load_in_8bit_checkbox, flops_checkbox],
                                  outputs=[model_status_label, gpu_usage_label, flops_usage_label])
             model_save_btn.click(save_custom_config,
                                  inputs=[model_list_dropdown, ctx_length_slider, lora_path, load_in_8bit_checkbox])
@@ -234,8 +234,7 @@ def main(args):
 
         predict_params = [chatbot, model_param_elements["system_prompt"],
                           model_param_elements["temperature"], 
-                          model_param_elements["enable_postprocessing"],
-                          model_param_elements["rope_yarn"]]
+                          model_param_elements["enable_postprocessing"]]
         submit_btn.click(append_user_input, [user_input, chatbot, model_param_elements["system_prompt"]],
                          [user_input, chatbot, prediction_status_label]).then(predict, predict_params, [chatbot, prediction_status_label])
 

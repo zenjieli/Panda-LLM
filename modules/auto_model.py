@@ -19,6 +19,19 @@ class AutoModel(BaseModel):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self._tokenizer = AutoTokenizer.from_pretrained(model_path)
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+
+        # Check position embedding scaling
+        rope_yarn = kwargs.get("rope_yarn", False)
+        if rope_yarn:
+            if hasattr(config, "rope_scaling") and (
+                config.rope_scaling == None or config.rope_scaling["rope_type"] != "yarn"):
+                config.rope_scaling = {
+                    "rope_type": "yarn",
+                    "factor": 4.0,
+                    "original_max_position_embeddings": 32768
+                }
+                print("Long context enabled.")
+
         dtype = config.torch_dtype if hasattr(config, "torch_dtype") else "auto"
 
         # model.dtype will be set to torch.float16 if GPTQ is used
@@ -31,7 +44,8 @@ class AutoModel(BaseModel):
                 attn_implementation="flash_attention_2"
                 if self.supports_flash_attention and dtype in [torch.bfloat16, torch.float16]
                 else "sdpa",
-                trust_remote_code=True,)
+                trust_remote_code=True,
+                config=config)
         except:
             self.core_model = AutoModelForImageTextToText.from_pretrained(
                 model_path, load_in_8bit=load_in_8bit, device_map="auto", torch_dtype="auto", trust_remote_code=True)
@@ -62,28 +76,13 @@ class AutoModel(BaseModel):
     def try_tokenize(self, chatbot, system_prompt) -> List:
         return self._tokenize(chatbot, system_prompt).squeeze().tolist()
 
-    @staticmethod
-    def try_set_rope_scaling(model, rope_yarn=False):
-        if not rope_yarn:
-            return
-
-        if hasattr(model.config, "rope_scaling"):
-            model.config.rope_scaling = {
-                "rope_type": "yarn",
-                "factor": 4.0,
-                "original_max_position_embeddings": 32768
-            }
-        else:
-            print("This model does not support RoPE scaling.")
-
     def predict(self, chatbot, params):
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot, ""
         else:
-            model_params, system_prompt, enable_postprocessing, rope_yarn = BaseModel.gather_params(
+            model_params, system_prompt, enable_postprocessing = BaseModel.gather_params(
                 params, self._chat_completion_params)
-            
-            self.try_set_rope_scaling(self.core_model, rope_yarn)
+
             stop = self.StopOnTokens()
             model_inputs = self._tokenize(chatbot, system_prompt).to(self.device)
             streamer = TextIteratorStreamer(
