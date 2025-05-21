@@ -52,4 +52,5 @@ if __name__ == '__main__':
 
     client = OpenAI(base_url=f"http://{args.server_name}:{args.server_port}/v1", api_key="none")
     img_filename = upload_file_fast(osp.expanduser("~/Pictures/dolphin_screenshot.png"))
-    print(predict_nostream("description of the target element \"File\"", img_filename))
+    prompt = "You are a GUI agent. You are given a task and your action history, with screenshots. You need to perform the next action to complete the task. \n\n## Output Format\n\nAction: ...\n\n\n## Action Space\nclick(point='<point>x1 y1</point>'')\n\n## User Instruction"
+    print(predict_nostream(prompt + "\n" + "Click on \"Settings\" menu.", img_filename))
