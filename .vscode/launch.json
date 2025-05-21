@@ -51,7 +51,8 @@
             "args": [
                 "--model_name_or_path",
                 // "~/weights/hf/hub/qwen2.5-0.5b-instruct-q8_0.gguf"
-                "AskUI/PTA-1"
+                // "AskUI/PTA-1"
+                "ByteDance-Seed/UI-TARS-1.5-7B"
             ],
             "justMyCode": false
         },

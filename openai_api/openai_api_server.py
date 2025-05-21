@@ -203,8 +203,8 @@ def _get_args():
     parser.add_argument(
         "--server-name",
         type=str,
-        default="127.0.0.1",
-        help=" If you want other computers to access your server, use 0.0.0.0 instead.",
+        default="0.0.0.0",
+        help=" If you want other computers to access your server, use 0.0.0.0.",
     )
     parser.add_argument(
         "--disable-gc",
