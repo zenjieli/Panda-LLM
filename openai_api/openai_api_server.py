@@ -4,9 +4,12 @@ LLM as a server with OpenAI API
 import os
 import os.path as osp
 import sys
+import base64
+import io
 from argparse import ArgumentParser
 from contextlib import asynccontextmanager
 from typing import Dict
+from PIL import Image
 
 import torch
 import uvicorn
@@ -19,8 +22,6 @@ from transformers import StoppingCriteria
 
 
 from openai_types import (
-    ModelCard,
-    ModelList,
     ChatMessage,
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -64,13 +65,6 @@ app.add_middleware(
 )
 
 
-@app.get("/v1/models", response_model=ModelList)
-async def list_models():
-    global model_args
-    model_card = ModelCard(id="Qwen1.5")
-    return ModelList(data=[model_card])
-
-
 # To work around that unpleasant leading-\n tokenization issue!
 def add_extra_stop_words(stop_words):
     if stop_words:
@@ -98,22 +92,44 @@ def parse_messages(messages):
 
     query = None
     system = None
-    image_filename = None
     if messages[-1].role == "user":
-        query = messages[-1].content
-        extra_info = messages[-1].function_call
-        image_filename = extra_info.get("image", None) if extra_info.get("type") == "image" else None
+        content = messages[-1].content
+        if isinstance(content, str):
+            query = content # Handle text-only content
+        elif isinstance(content, list): # Handle multimodal content
+            for item in content:
+                if item.type == "text":
+                    query = item.text
+                elif item.type == "image_url":
+                    image_url = item.image_url.url
+                else:
+                    raise HTTPException(status_code=400, detail="Invalid content type")
     else:
         raise HTTPException(status_code=400, detail="Invalid request: query missing")
 
-    return query, system, image_filename
+    return query, system, image_url
+
+# Helper function to process image from base64
+def process_image(image_data: str) -> Image.Image:
+    try:
+        # Remove data URI prefix if present
+        if image_data.startswith("data:image"):
+            image_data = image_data.split(",")[1]
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        return image
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid image data: {str(e)}")
 
 
 @app.post("/v1/chat/completions", response_model=ChatCompletionResponse)
 async def create_chat_completion(request: ChatCompletionRequest):
     global model, tokenizer
 
-    gen_kwargs = {}
+    gen_kwargs = {
+        "max_new_tokens": request.max_tokens,       
+        "do_sample": request.temperature is not None and request.temperature > 0
+    }
     if request.top_k is not None:
         gen_kwargs["top_k"] = request.top_k
     if request.temperature is not None:
@@ -121,10 +137,13 @@ async def create_chat_completion(request: ChatCompletionRequest):
     if request.top_p:
         gen_kwargs["top_p"] = request.top_p
 
-    query, system, image_filename = parse_messages(request.messages)
+    query, system, image_url = parse_messages(request.messages)
 
-    if image_filename:
-        gen_kwargs["image_url"] = "files/" + image_filename
+    if image_url is not None:
+        gen_kwargs["image_url"] = image_url
+    
+    if request.seed is not None: # Handle seed for reproducibility
+        torch.manual_seed(request.seed)
 
     if request.stream:
         print("Streaming is not supported. Fall back to non-streaming mode.")
@@ -203,8 +222,8 @@ def _get_args():
     parser.add_argument(
         "--server-name",
         type=str,
-        default="127.0.0.1",
-        help=" If you want other computers to access your server, use 0.0.0.0 instead.",
+        default="0.0.0.0",
+        help=" If you want other computers to access your server, use 0.0.0.0.",
     )
     parser.add_argument(
         "--disable-gc",

@@ -5,17 +5,18 @@ from transformers.utils import check_min_version
 from qwen_vl_utils import process_vision_info
 
 
-@ModelFactory.register("qwen2(\.5)?-vl")
+@ModelFactory.register("qwen2(\.5)?-vl|UI-TARS-1\.5")
 class Qwen2VLModel(BaseModel):
     """
     Support QwenVL2Model with transformers library
     Tested with transformers==4.49.0    
-    """    
-    def __init__(self, model_path, **kwargs) -> None:
+    """
+
+    def __init__(self, model_path, load_in_8bit=False, **kwargs) -> None:
         super().__init__()
 
         import re
-        version_2_5 = re.search("qwen2\.5-vl", model_path, re.IGNORECASE)
+        version_2_5 = re.search("qwen2\.5-vl|UI-TARS-1\.5", model_path, re.IGNORECASE)
 
         if version_2_5:
             check_min_version("4.49.0.dev0")
@@ -27,6 +28,7 @@ class Qwen2VLModel(BaseModel):
 
         self.core_model = model_class.from_pretrained(
             model_path,
+            load_in_8bit=load_in_8bit,
             torch_dtype="auto",
             attn_implementation="flash_attention_2",
             device_map="auto",
@@ -48,11 +50,11 @@ class Qwen2VLModel(BaseModel):
             if isinstance(user_msg, (tuple, list)):  # query is media path
                 if BaseModel.is_video_file(user_msg[0]):
                     content.append({"type": "video", "video": user_msg[0]})
-                elif BaseModel.is_image_file(user_msg[0]):
-                    content.append({"type": "image", "image": user_msg[0]})
+                elif BaseModel.is_image_file(user_msg[0]) or BaseModel.is_base64_image(user_msg[0]):
+                    content.append({"type": "image", "image": user_msg[0]})                
                 else:
                     raise ValueError(f"Unsupported file type: {user_msg[0]}")
-            elif isinstance(user_msg, str): # query is text
+            elif isinstance(user_msg, str):  # query is text
                 if user_msg:
                     content.append({"type": "text", "text": user_msg})
                     messages.append({"role": "user", "content": content})
@@ -61,6 +63,29 @@ class Qwen2VLModel(BaseModel):
                     messages.append({'role': 'assistant', 'content': model_msg})
 
         return messages
+
+    def predict_simple_nostream(self, query: str, system: str, gen_kwargs: dict) -> str:
+        image_url = gen_kwargs.get("image_url", None)
+        dummy_chatbot = [
+            [(image_url, ""), ""],
+            [query, ""]]
+        messages = self.chatbot_to_messages(dummy_chatbot)
+        # Preprocess the inputs
+        text_prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True)
+        image_inputs, video_inputs = process_vision_info(messages)
+        inputs = self.processor(text=[text_prompt],
+                                images=image_inputs,
+                                videos=video_inputs,
+                                padding=True,
+                                return_tensors="pt")
+        inputs = inputs.to("cuda")
+        generated_ids = self.core_model.generate(**inputs, max_new_tokens=1024)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids):] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = self.processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False)
+        return output_text[0]
 
     def predict(self, chatbot: list[list[str | tuple]], params: dict):
         from time import time
