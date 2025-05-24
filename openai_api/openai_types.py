@@ -7,21 +7,6 @@ from typing import Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field
 
 
-class ModelCard(BaseModel):
-    id: str
-    object: str = 'model'
-    created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = 'owner'
-    root: Optional[str] = None
-    parent: Optional[str] = None
-    permission: Optional[list] = None
-
-
-class ModelList(BaseModel):
-    object: str = 'list'
-    data: List[ModelCard] = []
-
-
 class ChatMessage(BaseModel):
     role: Literal['user', 'assistant', 'system', 'function']
     content: Optional[str]

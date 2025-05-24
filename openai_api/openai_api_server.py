@@ -18,9 +18,7 @@ from pydantic import BaseModel
 from transformers import StoppingCriteria
 
 
-from openai_types import (
-    ModelCard,
-    ModelList,
+from openai_types import (    
     ChatMessage,
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -62,13 +60,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.get("/v1/models", response_model=ModelList)
-async def list_models():
-    global model_args
-    model_card = ModelCard(id="Qwen1.5")
-    return ModelList(data=[model_card])
 
 
 # To work around that unpleasant leading-\n tokenization issue!
