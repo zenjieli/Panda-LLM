@@ -111,4 +111,9 @@ class BaseModel:
     def is_video_file(filename: str)->bool:
         ext = "." in filename and filename.split(".")[-1].lower()
         return ext == "mp4"
+    
+    @staticmethod
+    def is_base64_image(data: str)->bool:
+        return data.startswith("data:image")
+        
 

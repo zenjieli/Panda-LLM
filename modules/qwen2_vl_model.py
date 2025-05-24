@@ -50,8 +50,8 @@ class Qwen2VLModel(BaseModel):
             if isinstance(user_msg, (tuple, list)):  # query is media path
                 if BaseModel.is_video_file(user_msg[0]):
                     content.append({"type": "video", "video": user_msg[0]})
-                elif BaseModel.is_image_file(user_msg[0]):
-                    content.append({"type": "image", "image": user_msg[0]})
+                elif BaseModel.is_image_file(user_msg[0]) or BaseModel.is_base64_image(user_msg[0]):
+                    content.append({"type": "image", "image": user_msg[0]})                
                 else:
                     raise ValueError(f"Unsupported file type: {user_msg[0]}")
             elif isinstance(user_msg, str):  # query is text
