@@ -5,7 +5,7 @@ from threading import Thread
 import torch
 from peft import PeftModel
 from modules.base_model import BaseModel
-from utils.postprocessing import CJKPostprocessing, PostprocessingGroup, MathPostprocessing
+from utils.postprocessing import CJKPostprocessing, PostprocessingGroup, MathPostprocessing, ReasoningPostprocessing
 
 
 class AutoModel(BaseModel):
@@ -85,7 +85,8 @@ class AutoModel(BaseModel):
             t = Thread(target=self.core_model.generate, kwargs=generate_kwargs)
             t.start()
 
-            postprocessors = PostprocessingGroup(CJKPostprocessing(enable_postprocessing), MathPostprocessing())
+            postprocessors = PostprocessingGroup(
+                CJKPostprocessing(enable_postprocessing), MathPostprocessing(), ReasoningPostprocessing())
             for new_token in streamer:
                 if self.stop_event.is_set():
                     break

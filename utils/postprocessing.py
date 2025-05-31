@@ -20,9 +20,9 @@ class PostprocessingGroup:
 class ReasoningPostprocessing(Postprocessing):
     def run(self, text: str):
         if text.startswith("<think>"):
-            return "--------------------------------------------------*Reasoning starts*:\n "
+            return "<details open>\n<summary>🤔Thinking</summary>\n"
         elif text.startswith("</think>"):
-            return "--------------------------------------------------*Reasoning ends*.\n\n"
+            return "</details>\n\n"
         else:
             return text
 

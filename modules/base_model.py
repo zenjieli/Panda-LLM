@@ -49,16 +49,22 @@ class BaseModel:
         """
         return True
 
-    def chatbot_to_messages(chatbot, system_prompt) -> list[str]:
+    def chatbot_to_messages(chatbot, system_prompt) -> list[dict]:
+        import re
         messages = [{'role': 'system', 'content': system_prompt}] if system_prompt else []
+
         for idx, (user_msg, model_msg) in enumerate(chatbot):
             if idx == len(chatbot) - 1 and not model_msg:
                 messages.append({'role': 'user', 'content': user_msg})
                 break
+
             if user_msg:
                 messages.append({'role': 'user', 'content': user_msg})
+
             if model_msg:
-                messages.append({'role': 'assistant', 'content': model_msg})
+                # Remove any block inside <details>...</details>
+                cleaned_model_msg = re.sub(r'<details.*?>.*?</details>', '', model_msg, flags=re.DOTALL)
+                messages.append({'role': 'assistant', 'content': cleaned_model_msg.strip()})
 
         return messages
 
@@ -73,7 +79,7 @@ class BaseModel:
         """
         model_params = {params_name: user_param_elements[params_name]
                         for params_name in expected_params if params_name in user_param_elements}
-        enable_postprocessing = user_param_elements.get('enable_postprocessing', False)        
+        enable_postprocessing = user_param_elements.get('enable_postprocessing', False)
         return model_params, user_param_elements.get('system_prompt'), enable_postprocessing
 
     def num_params(self) -> int:
@@ -82,7 +88,7 @@ class BaseModel:
         else:  # Not supported
             return 0
 
-    def generate_stream(self, streamer: TextIteratorStreamer, inputs: dict)->Generator[str, None, None]:
+    def generate_stream(self, streamer: TextIteratorStreamer, inputs: dict) -> Generator[str, None, None]:
         t = Thread(target=self.core_model.generate, kwargs=inputs)
         t.start()
 
@@ -103,12 +109,11 @@ class BaseModel:
         return ""
 
     @staticmethod
-    def is_image_file(filename: str)->bool:
+    def is_image_file(filename: str) -> bool:
         ext = "." in filename and filename.split(".")[-1].lower()
         return ext in ["jpg", "jpeg", "png", "gif"]
 
     @staticmethod
-    def is_video_file(filename: str)->bool:
+    def is_video_file(filename: str) -> bool:
         ext = "." in filename and filename.split(".")[-1].lower()
         return ext == "mp4"
-
