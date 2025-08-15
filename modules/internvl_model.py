@@ -11,7 +11,7 @@ from torchvision.transforms.functional import InterpolationMode
 from transformers import AutoModel, AutoTokenizer
 from modules.model_factory import ModelFactory
 
-@ModelFactory.register("InternVL2")
+@ModelFactory.register("InternVL[23]")
 class InternVL2Model(BaseModel):
     def __init__(self, model_path, **kwargs) -> None:
 
