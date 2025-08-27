@@ -31,6 +31,9 @@ class BaseModel:
 
     def support_video(self):
         return False
+    
+    def support_thinking(self):
+        return False
 
     def append_user_input(self, query: str, chatbot: list[list]) -> tuple[str, list[list]]:
         if chatbot is None:

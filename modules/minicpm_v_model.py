@@ -5,7 +5,8 @@ For version 2.5 and 2.6, use transformers >= 4.45.1
 """
 import torch
 from PIL import Image
-from typing import List
+from typing import Optional
+import re
 from modules.base_model import BaseModel
 from transformers import AutoConfig, AutoModel, AutoTokenizer, BitsAndBytesConfig
 from modules.model_factory import ModelFactory
@@ -15,15 +16,29 @@ from modules.model_factory import ModelFactory
 class MiniCPMModel(BaseModel):
     _chat_completion_params = ["temperature", "repetition_penalty"]
 
+    # Define version patterns: regex pattern -> (version, is_legacy)
+    _version_patterns: list[tuple[re.Pattern, str, bool]] = [
+        (re.compile(r"V?-?2[_-]5", re.I), "2.5", False),
+        (re.compile(r"2[_-]6", re.I), "2.6", False),
+        (re.compile(r"4[_-]5", re.I), "4.5", False),
+        (re.compile(r"V?-?2$", re.I), "2", True),  # Matches "V-2" or ends with "2"
+        (re.compile(r"MiniCPM-V$", re.I), "2", True),  # Explicit legacy model
+    ]
+
     def __init__(self, model_path, load_in_8bit=False, **kwargs) -> None:
         super().__init__()
 
-        if "V-2_5" in model_path or "2_6" in model_path:
-            self.is_legacy = False
-        elif "V-2" in model_path or model_path == 'openbmb/MiniCPM-V':
-            self.is_legacy = True
-        else:
-            raise Exception(f"Unsupported version: {model_path}")
+        version_info: Optional[tuple[str, bool]] = None
+
+        for pattern, version, is_legacy in self._version_patterns:
+            if pattern.search(model_path):
+                version_info = (version, is_legacy)
+                break
+
+        if version_info is None:
+            raise ValueError(f"Unsupported or unrecognized MiniCPM model path: {model_path}")
+
+        self.version, self.is_legacy = version_info
 
         if self.is_legacy:
             self.core_model = MiniCPMModel.load_legacy_model(model_path)
@@ -60,8 +75,14 @@ class MiniCPMModel(BaseModel):
 
     def support_image(self):
         return True
+    
+    def support_video(self):
+        return self.version == "4.5"
 
-    def chatbot_to_messages(self, chatbot, system_prompt) -> List[str]:
+    def support_thinking(self):
+        return self.version == "4.5"
+
+    def chatbot_to_messages(self, chatbot, system_prompt) -> list[str]:
         messages = [{"role": "system", "content": system_prompt}] if system_prompt else []
         for _, (user_msg, model_msg) in enumerate(chatbot):
             if isinstance(user_msg, (tuple, list)):  # query is image path
@@ -77,9 +98,9 @@ class MiniCPMModel(BaseModel):
         if len(chatbot) == 0 or not chatbot[-1][0] or chatbot[-1][1]:  # Empty user input or non-empty reply
             yield chatbot
         else:
-            model_params, system_prompt, _, _ = BaseModel.gather_params(params, self._chat_completion_params)
+            model_params, system_prompt, _ = BaseModel.gather_params(params, self._chat_completion_params)
             messages, image = self.chatbot_to_messages(chatbot, system_prompt)
-
+            
             if self.is_legacy:
                 model_params["context"] = None
 
@@ -100,7 +121,7 @@ class MiniCPMModel(BaseModel):
 
                     if item:
                         chatbot[-1][-1] += item
-                        yield chatbot
+                        yield chatbot, ""
 
         self.stop_event.clear()
 
